@@ -21,7 +21,7 @@ function Navbar() {
         if (event.target.id === "home_link") {
             setIsHome(true);
             setIsCertificate(false);
-            navigate(process.env.PUBLIC_URL);
+            navigate("/");
         }
         else if (event.target.id === "certificate_link") {
             setIsCertificate(true);
@@ -281,16 +281,16 @@ function GoTopButton() {
 export default function App() {
     return (
         <>
-            <BrowserRouter>
+            <BrowserRouter basename={process.env.PUBLIC_URL === '.' ? '' : process.env.PUBLIC_URL}>
                 <Routes>
-                    <Route exact path={process.env.PUBLIC_URL} element={
+                    <Route exact path="/" element={
                         <>
                             <Navbar />
                             <GoTopButton />
                             <Home />
                         </>
                     }></Route>
-                    <Route exact path={process.env.PUBLIC_URL + '/certificate'} element={
+                    <Route exact path="/certificate" element={
                         <>
                             <Navbar />
                             <GoTopButton />
