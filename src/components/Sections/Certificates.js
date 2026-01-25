@@ -186,8 +186,8 @@ const Certificates = () => {
                   <span>{item.issuer}</span>
                 </MetaData>
 
-                {item.image_base64 && (
-                  <ViewButton onClick={() => setSelectedImage(item.image_base64)}>
+                {item.image_url && (
+                  <ViewButton onClick={() => setSelectedImage(item.image_url)}>
                     &gt; view_proof.jpg
                   </ViewButton>
                 )}

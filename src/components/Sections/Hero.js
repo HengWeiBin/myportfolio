@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import styled from 'styled-components';
 import TrainingLog from '../Hero/TrainingLog';
-import { getProfile } from '../../services/api';
+import { useProfile } from '../../context/ProfileContext';
 
 const HeroSection = styled.section`
   min-height: 80vh;
@@ -93,11 +93,7 @@ const Button = styled.button`
 `;
 
 const Hero = () => {
-  const [profile, setProfile] = useState(null);
-
-  useEffect(() => {
-    getProfile().then(p => setProfile(p)).catch(e => console.error(e));
-  }, []);
+  const { profile } = useProfile();
 
   const title = profile?.title || "Machine Learning Engineer \n& AI Researcher.";
   const subtitle = profile?.bio || "Translating data into intelligence. Specializing in LLMs, Computer Vision, and scalable MLOps pipelines.";

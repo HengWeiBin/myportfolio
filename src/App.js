@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { GlobalStyles } from './styles/GlobalStyles';
+import { ProfileProvider } from './context/ProfileContext';
 import { TerminalLayout } from './components/Layout/TerminalLayout';
 // Sections
 import Hero from './components/Sections/Hero';
@@ -30,22 +31,24 @@ function HomePage() {
 
 function App() {
     return (
-        <BrowserRouter>
-            <GlobalStyles />
-            <Routes>
-                {/* Public Routes */}
-                <Route path="/" element={
-                    <TerminalLayout>
-                        <HomePage />
-                    </TerminalLayout>
-                } />
+        <ProfileProvider>
+            <BrowserRouter>
+                <GlobalStyles />
+                <Routes>
+                    {/* Public Routes */}
+                    <Route path="/" element={
+                        <TerminalLayout>
+                            <HomePage />
+                        </TerminalLayout>
+                    } />
 
-                {/* Admin Routes - Placeholder for now until next step */}
-                <Route path="/admin/login" element={<Login />} />
-                <Route path="/admin/*" element={<AdminLayout />} />
+                    {/* Admin Routes - Placeholder for now until next step */}
+                    <Route path="/admin/login" element={<Login />} />
+                    <Route path="/admin/*" element={<AdminLayout />} />
 
-            </Routes>
-        </BrowserRouter>
+                </Routes>
+            </BrowserRouter>
+        </ProfileProvider>
     );
 }
 

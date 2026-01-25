@@ -22,3 +22,26 @@ export const SkeletonCard = styled.div`
   background: rgba(255,255,255,0.01);
   margin-bottom: 2rem;
 `;
+
+const TableRow = styled.div`
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+  border-bottom: 1px solid var(--border-color);
+`;
+
+export const AdminTableSkeleton = () => (
+  <div style={{ width: '100%', border: '1px solid var(--border-color)' }}>
+    <div style={{ padding: '10px', borderBottom: '1px solid var(--border-color)', background: 'rgba(255,255,255,0.02)' }}>
+      <Skeleton height="1.5rem" width="30%" />
+    </div>
+    {[1, 2, 3, 4, 5].map(i => (
+      <TableRow key={i}>
+        <div style={{ flex: 1 }}><Skeleton height="1.2rem" width="80%" /></div>
+        <div style={{ flex: 2 }}><Skeleton height="1.2rem" width="60%" /></div>
+        <div style={{ width: '100px' }}><Skeleton height="2rem" /></div>
+      </TableRow>
+    ))}
+  </div>
+);
+

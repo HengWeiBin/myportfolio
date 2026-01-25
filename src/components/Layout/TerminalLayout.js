@@ -1,8 +1,7 @@
 import React from 'react';
 import styled from 'styled-components';
 import { Link, useLocation } from 'react-router-dom';
-import { getProfile } from '../../services/api';
-import { useState, useEffect } from 'react';
+import { useProfile } from '../../context/ProfileContext';
 import LatentSpace from '../Background/LatentSpace';
 
 // --- Styled Components ---
@@ -115,6 +114,7 @@ const ContactLinks = styled.div`
 
 const Navbar = () => {
   const location = useLocation();
+  const { profile } = useProfile();
   const isHome = location.pathname === '/';
 
   // Smooth scroll if on home page
@@ -126,11 +126,13 @@ const Navbar = () => {
     }
   };
 
+  const promptName = profile?.name ? profile.name.toLowerCase().replace(/\s/g, '') : 'user';
+
   return (
     <NavContainer>
       <NavContent>
         <Logo to="/">
-          &gt; root@hengweibin:~$
+          &gt; root@{promptName}:~$
         </Logo>
         <NavLinks>
           <NavLinkItem to="/" $active={location.pathname === '/' && !location.hash} onClick={() => window.scrollTo(0, 0)}>[Home]</NavLinkItem>
@@ -146,24 +148,20 @@ const Navbar = () => {
 };
 
 const Footer = () => {
-  const [profile, setProfile] = useState({});
-
-  useEffect(() => {
-    getProfile().then(p => setProfile(p || {})).catch(e => console.error(e));
-  }, []);
+  const { profile } = useProfile();
 
   return (
     <FooterContainer>
       <div className="container">
         <div>$ echo "Let's connect."</div>
         <ContactLinks>
-          {profile.github && <a href={profile.github} target="_blank" rel="noreferrer">GitHub</a>}
-          {profile.linkedin && <a href={profile.linkedin} target="_blank" rel="noreferrer">LinkedIn</a>}
-          {profile.email && <a href={`mailto:${profile.email}`}>Email</a>}
+          {profile?.github && <a href={profile.github} target="_blank" rel="noreferrer">GitHub</a>}
+          {profile?.linkedin && <a href={profile.linkedin} target="_blank" rel="noreferrer">LinkedIn</a>}
+          {profile?.email && <a href={`mailto:${profile.email}`}>Email</a>}
           {/* Add others if needed */}
         </ContactLinks>
         <div style={{ marginTop: '2rem', fontSize: '0.8rem', opacity: 0.6 }}>
-          Built with React & Neon DB. © {new Date().getFullYear()} {profile.name}
+          Built with React & Neon DB. © {new Date().getFullYear()} {profile?.name}
         </div>
       </div>
     </FooterContainer>
@@ -171,6 +169,14 @@ const Footer = () => {
 };
 
 export const TerminalLayout = ({ children }) => {
+  const { profile } = useProfile();
+
+  React.useEffect(() => {
+    if (profile?.name) {
+      document.title = `${profile.name} | Portfolio`;
+    }
+  }, [profile]);
+
   return (
     <LayoutWrapper>
       <LatentSpace />

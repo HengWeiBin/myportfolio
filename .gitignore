@@ -25,3 +25,6 @@ yarn-error.log*
 backup/
 scripts/
 AGENTS.md
+
+# Local Netlify folder
+.netlify

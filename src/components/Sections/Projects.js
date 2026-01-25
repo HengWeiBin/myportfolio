@@ -297,11 +297,10 @@ const Projects = () => {
 
     if (visualType === 'NeuralArch') return <NeuralArch />;
     if (visualType === 'CodeBlock') return <CodeBlock code={`# Core Algorithm\ndef fuse_sensors(radar, camera):\n    """\n    Fuse radar point clouds with\n    camera image features.\n    """\n    return kalman_filter(radar, camera)`} />;
-    if (visualType === 'ResultViz') return <ResultViz label="Pedestrian" confidence="0.92" image={project.image_base64} />;
+    if (visualType === 'ResultViz') return <ResultViz label="Pedestrian" confidence="0.92" image={project.image_url} />;
 
-    // 2. Fallback to image from DB
-    if (project.image_base64) {
-      return <img src={project.image_base64} alt={project.title} loading="lazy" />;
+    if (project.image_url) {
+      return <img src={project.image_url} alt={project.title} loading="lazy" />;
     }
 
     // 3. Default fallback

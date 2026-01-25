@@ -22,10 +22,9 @@ export const getExperience = async () => {
 // --- UPDATE DATA (Protected) ---
 
 export const addProject = async (project) => {
-    // project: { title, description, link, date_start, date_end, image_base64, tags }
     return await sql`
-    INSERT INTO projects (title, description, link, date_start, date_end, image_base64, tags)
-    VALUES (${project.title}, ${project.description}, ${project.link}, ${project.date_start}, ${project.date_end}, ${project.image_base64}, ${project.tags})
+    INSERT INTO projects (title, description, link, date_start, date_end, image_url, tags)
+    VALUES (${project.title}, ${project.description}, ${project.link}, ${project.date_start}, ${project.date_end}, ${project.image_url || null}, ${project.tags})
     RETURNING *
   `;
 };
@@ -38,7 +37,7 @@ export const updateProject = async (id, project) => {
         link = ${project.link}, 
         date_start = ${project.date_start}, 
         date_end = ${project.date_end}, 
-        image_base64 = ${project.image_base64}, 
+        image_url = ${project.image_url || null},
         tags = ${project.tags}
     WHERE id = ${id}
     RETURNING *
@@ -52,8 +51,8 @@ export const deleteProject = async (id) => {
 
 export const addCertificate = async (cert) => {
     return await sql`
-    INSERT INTO certificates (title, issuer, date, image_base64, credential_id)
-    VALUES (${cert.title}, ${cert.issuer || ''}, ${cert.date}, ${cert.image_base64}, ${cert.credential_id || ''})
+    INSERT INTO certificates (title, issuer, date, image_url, credential_id)
+    VALUES (${cert.title}, ${cert.issuer || ''}, ${cert.date}, ${cert.image_url || null}, ${cert.credential_id || ''})
     RETURNING *
   `;
 };
@@ -66,7 +65,7 @@ export const updateCertificate = async (id, cert) => {
     SET title = ${cert.title}, 
         issuer = ${cert.issuer || ''}, 
         date = ${cert.date}, 
-        image_base64 = ${cert.image_base64}, 
+        image_url = ${cert.image_url || null},
         credential_id = ${cert.credential_id || ''}
     WHERE id = ${id}
     RETURNING *
@@ -112,7 +111,6 @@ export const getProfile = async () => {
 };
 
 export const updateProfile = async (profile) => {
-    // Upsert logic if id exists, otherwise insert
     if (profile.id) {
         return await sql`
         UPDATE profile 
@@ -124,14 +122,15 @@ export const updateProfile = async (profile) => {
             github = ${profile.github},
             linkedin = ${profile.linkedin},
             instagram = ${profile.instagram},
-            facebook = ${profile.facebook}
+            facebook = ${profile.facebook},
+            resume_link = ${profile.resume_link || null}
         WHERE id = ${profile.id}
         RETURNING *
         `;
     } else {
         return await sql`
-        INSERT INTO profile (name, title, email, phone, bio, github, linkedin, instagram, facebook)
-        VALUES (${profile.name}, ${profile.title}, ${profile.email}, ${profile.phone}, ${profile.bio}, ${profile.github}, ${profile.linkedin}, ${profile.instagram}, ${profile.facebook})
+        INSERT INTO profile (name, title, email, phone, bio, github, linkedin, instagram, facebook, resume_link)
+        VALUES (${profile.name}, ${profile.title}, ${profile.email}, ${profile.phone}, ${profile.bio}, ${profile.github}, ${profile.linkedin}, ${profile.instagram}, ${profile.facebook}, ${profile.resume_link || null})
         RETURNING *
         `;
     }

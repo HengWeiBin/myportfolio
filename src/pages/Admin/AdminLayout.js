@@ -1,13 +1,35 @@
 import React, { useEffect } from 'react';
 import styled from 'styled-components';
 import { Routes, Route, useNavigate, Link } from 'react-router-dom';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import { checkSession, logout } from '../../services/auth';
 import Dashboard from './Dashboard';
 
 const Layout = styled.div`
   display: flex;
   min-height: 100vh;
+  
+  .Toastify__toast-container {
+    z-index: 9999;
+  }
+  
+  .Toastify__toast {
+    background: var(--bg-dark);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    font-family: var(--font-mono);
+  }
+  
+  .Toastify__progress-bar {
+    background: var(--accent);
+  }
+  
+  .Toastify__close-button {
+    color: var(--text-secondary);
+  }
 `;
+
 
 const Sidebar = styled.div`
   width: 250px;
@@ -78,8 +100,10 @@ const AdminLayout = () => {
                     <Route path="*" element={<div>select an option</div>} />
                 </Routes>
             </Content>
+            <ToastContainer position="bottom-right" theme="dark" />
         </Layout>
     );
 };
+
 
 export default AdminLayout;

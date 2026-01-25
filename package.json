@@ -4,6 +4,8 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.975.0",
+    "@aws-sdk/s3-request-presigner": "^3.975.0",
     "@netlify/neon": "^0.1.0",
     "@testing-library/jest-dom": "^5.16.4",
     "bootstrap": "^5.1.3",
@@ -18,6 +20,7 @@
     "react-router-dom": "^6.3.0",
     "react-scripts": "^5.0.1",
     "react-syntax-highlighter": "^16.1.0",
+    "react-toastify": "^11.0.5",
     "styled-components": "^5.3.11",
     "web-vitals": "^2.1.4"
   },
@@ -25,6 +28,8 @@
     "predeploy": "npm run build",
     "deploy": "gh-pages -d build",
     "start": "react-scripts start",
+    "start:functions": "netlify functions:serve --port 9999",
+    "dev": "npm-run-all --parallel start start:functions",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
@@ -52,6 +57,9 @@
     "@testing-library/react": "^16.3.1",
     "@testing-library/user-event": "^14.6.1",
     "gh-pages": "^3.2.3",
+    "http-proxy-middleware": "^3.0.5",
+    "netlify-cli": "^23.13.5",
+    "npm-run-all": "^4.1.5",
     "reinstall-node-modules": "^2.0.0",
     "tailwindcss": "^4.1.18"
   }
