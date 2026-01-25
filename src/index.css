@@ -1,13 +1,69 @@
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+/* Terminal / Latent Space Theme Variables */
+:root {
+  --bg-color: #0d1117;
+  /* GitHub Dark Dimmed / Terminal Black */
+  --text-color: #c9d1d9;
+  /* Off-white text */
+  --primary-color: #58a6ff;
+  /* Terminal Blue */
+  --secondary-color: #238636;
+  /* Success Green */
+  --accent-color: #00ff41;
+  /* CRT Green */
+  --terminal-bg: #161b22;
+  --terminal-green: #00ff41;
+  --font-mono: 'Consolas', 'Monaco', 'Courier New', monospace;
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --nav-height: 70px;
 }
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  overflow-x: hidden;
+}
+
+/* Terminal Aesthetics */
+code,
+pre,
+.terminal-font {
+  font-family: var(--font-mono);
+}
+
+.terminal-card {
+  background: var(--terminal-bg);
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-color);
+}
+
+::-webkit-scrollbar-thumb {
+  background: #30363d;
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #8b949e;
+}
+
+/* Utilities */
+.text-terminal {
+  color: var(--terminal-green);
+}
+
+.bg-terminal {
+  background-color: var(--terminal-bg);
 }

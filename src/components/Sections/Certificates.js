@@ -20,18 +20,19 @@ const SectionTitle = styled.h2`
   }
 `;
 
-const CertificatesGrid = styled.div`
+const Grid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: 20px;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
 `;
 
-const CertCard = styled.div`
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid var(--border-color);
+const Card = styled.div`
+  background: ${props => props.$highlight ? 'rgba(88, 166, 255, 0.05)' : 'rgba(255, 255, 255, 0.02)'};
+  border: 1px solid ${props => props.$highlight ? 'var(--primary-color)' : 'var(--border-color)'};
   padding: 20px;
   position: relative;
   transition: all 0.2s;
+  border-left: ${props => props.$highlight ? '4px solid var(--primary-color)' : '1px solid var(--border-color)'};
   
   &:hover {
     border-color: var(--accent);
@@ -40,18 +41,25 @@ const CertCard = styled.div`
   }
 `;
 
-const CertHeader = styled.div`
+const Header = styled.div`
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
   margin-bottom: 1rem;
 `;
 
-const Icon = styled.div`
-  font-size: 1.5rem;
+const TypeBadge = styled.span`
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: ${props => props.$bg || '#333'};
+  color: ${props => props.$color || '#fff'};
+  text-transform: uppercase;
+  letter-spacing: 1px;
 `;
 
-const CertTitle = styled.h3`
+const Title = styled.h3`
   font-family: var(--font-mono);
   font-size: 1rem;
   line-height: 1.4;
@@ -62,38 +70,42 @@ const CertTitle = styled.h3`
 const MetaData = styled.div`
   font-size: 0.8rem;
   color: var(--text-secondary);
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
   
-  p {
-    margin-bottom: 0.2rem;
+  span {
+    display: inline-block;
+    margin-right: 15px;
   }
 `;
 
-const VerifyLink = styled.button`
+const ViewButton = styled.button`
   background: transparent;
-  border: 1px solid var(--border-color);
+  border: 1px dashed var(--border-color);
   color: var(--text-secondary);
-  padding: 5px 10px;
+  padding: 6px 12px;
   font-size: 0.8rem;
   font-family: var(--font-mono);
   cursor: pointer;
   width: 100%;
   text-align: left;
+  transition: all 0.2s;
   
   &:hover {
     border-color: var(--accent);
     color: var(--accent);
+    background: rgba(0,255,65,0.05);
   }
 `;
 
 const ModalOverlay = styled.div`
   position: fixed;
   top: 0; left:0; right:0; bottom:0;
-  background: rgba(0,0,0,0.8);
+  background: rgba(0,0,0,0.85);
   display: flex;
   justify-content: center;
   align-items: center;
   z-index: 2000;
+  backdrop-filter: blur(5px);
 `;
 
 const ModalContent = styled.div`
@@ -103,58 +115,97 @@ const ModalContent = styled.div`
   img {
     max-width: 100%;
     max-height: 80vh;
-    border: 2px solid var(--accent);
+    border: 1px solid var(--terminal-green);
+    box-shadow: 0 0 30px rgba(0, 255, 65, 0.2);
   }
 `;
 
 const Certificates = () => {
-    const [certs, setCerts] = useState([]);
-    const [selectedImage, setSelectedImage] = useState(null);
+  const [achievements, setAchievements] = useState([]);
+  const [selectedImage, setSelectedImage] = useState(null);
 
-    useEffect(() => {
-        const fetchCerts = async () => {
-            const data = await sql`SELECT * FROM certificates ORDER BY date DESC`;
-            setCerts(data);
-        };
-        fetchCerts();
-    }, []);
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const data = await sql`SELECT * FROM certificates ORDER BY date DESC`;
+        setAchievements(data);
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    fetchData();
+  }, []);
 
-    return (
-        <Section id="certificates">
-            <div className="container">
-                <SectionTitle>Credentials</SectionTitle>
-                <CertificatesGrid>
-                    {certs.map((cert) => (
-                        <CertCard key={cert.id}>
-                            <CertHeader>
-                                <Icon>🏅</Icon>
-                            </CertHeader>
-                            <CertTitle>{cert.title}</CertTitle>
-                            <MetaData>
-                                <p>Date: {cert.date}</p>
-                                {cert.issuer && <p>Issuer: {cert.issuer}</p>}
-                                {cert.credential_id && <p>ID: {cert.credential_id}</p>}
-                            </MetaData>
+  // Helper to categorize achievements if categorical data is missing
+  const getCategory = (item) => {
+    const lowerTitle = item.title.toLowerCase();
+    if (lowerTitle.includes('paper') || lowerTitle.includes('conference') || lowerTitle.includes('journal')) return 'Paper';
+    if (lowerTitle.includes('competition') || lowerTitle.includes('hackathon') || lowerTitle.includes('award')) return 'Competition';
+    return 'Certificate';
+  };
 
-                            {cert.image_base64 && (
-                                <VerifyLink onClick={() => setSelectedImage(cert.image_base64)}>
-                                    $ view_cert.png
-                                </VerifyLink>
-                            )}
-                        </CertCard>
-                    ))}
-                </CertificatesGrid>
-            </div>
+  const getTypeStyles = (type) => {
+    switch (type) {
+      case 'Paper': return { bg: 'rgba(88, 166, 255, 0.2)', color: '#58a6ff', label: 'PUBLICATION' };
+      case 'Competition': return { bg: 'rgba(210, 153, 34, 0.2)', color: '#d29922', label: 'AWARD' };
+      default: return { bg: 'rgba(56, 139, 253, 0.1)', color: '#8b949e', label: 'CERT' };
+    }
+  };
 
-            {selectedImage && (
-                <ModalOverlay onClick={() => setSelectedImage(null)}>
-                    <ModalContent onClick={e => e.stopPropagation()}>
-                        <img src={selectedImage} alt="Certificate" />
-                    </ModalContent>
-                </ModalOverlay>
-            )}
-        </Section>
-    );
+  // Sort: Papers > Competitions > Certs
+  const sortedAchievements = [...achievements].sort((a, b) => {
+    const score = (type) => {
+      if (type === 'Paper') return 3;
+      if (type === 'Competition') return 2;
+      return 1;
+    };
+    return score(getCategory(b)) - score(getCategory(a));
+  });
+
+  return (
+    <Section id="certificates">
+      <div className="container">
+        <SectionTitle>Credentials</SectionTitle>
+        <Grid>
+          {sortedAchievements.map((item) => {
+            const category = getCategory(item);
+            const styles = getTypeStyles(category);
+            const isHighlight = category === 'Paper' || category === 'Competition';
+
+            return (
+              <Card key={item.id} $highlight={isHighlight}>
+                <Header>
+                  <TypeBadge $bg={styles.bg} $color={styles.color}>{styles.label}</TypeBadge>
+                  <span style={{ fontSize: '1.2rem', opacity: 0.5 }}>
+                    {category === 'Paper' ? '📄' : category === 'Competition' ? '🏆' : '📜'}
+                  </span>
+                </Header>
+                <Title>{item.title}</Title>
+                <MetaData>
+                  <span>{item.date}</span>
+                  <span>{item.issuer}</span>
+                </MetaData>
+
+                {item.image_base64 && (
+                  <ViewButton onClick={() => setSelectedImage(item.image_base64)}>
+                    &gt; view_proof.jpg
+                  </ViewButton>
+                )}
+              </Card>
+            );
+          })}
+        </Grid>
+      </div>
+
+      {selectedImage && (
+        <ModalOverlay onClick={() => setSelectedImage(null)}>
+          <ModalContent onClick={e => e.stopPropagation()}>
+            <img src={selectedImage} alt="Credential Proof" />
+          </ModalContent>
+        </ModalOverlay>
+      )}
+    </Section>
+  );
 };
 
 export default Certificates;

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import sql from '../../services/db';
+import { Skeleton } from '../Common/Loading';
 
 const Section = styled.section`
   padding: 4rem 0;
@@ -79,35 +80,62 @@ const Description = styled.p`
 `;
 
 const Experience = () => {
-    const [experiences, setExperiences] = useState([]);
+  const [experiences, setExperiences] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        const fetchExperience = async () => {
-            const data = await sql`SELECT * FROM experience ORDER BY id DESC`;
-            setExperiences(data);
-        };
-        fetchExperience();
-    }, []);
+  useEffect(() => {
+    const fetchExperience = async () => {
+      try {
+        const data = await sql`SELECT * FROM experience ORDER BY id DESC`;
+        setExperiences(data);
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchExperience();
+  }, []);
 
-    if (experiences.length === 0) return null; // Don't show if empty
-
+  if (loading) {
     return (
-        <Section id="experience">
-            <div className="container">
-                <SectionTitle>Experience Log</SectionTitle>
-                <TimelineWrapper>
-                    {experiences.map((exp) => (
-                        <TimelineItem key={exp.id}>
-                            <Role>{exp.role}</Role>
-                            <Company>{exp.company}</Company>
-                            <DateRange>{exp.date_range}</DateRange>
-                            <Description>{exp.description}</Description>
-                        </TimelineItem>
-                    ))}
-                </TimelineWrapper>
-            </div>
-        </Section>
+      <Section id="experience">
+        <div className="container">
+          <SectionTitle>Experience Log</SectionTitle>
+          <TimelineWrapper>
+            {[1, 2].map(i => (
+              <TimelineItem key={i}>
+                <Skeleton width="60%" height="1.4rem" mb="1rem" />
+                <Skeleton width="40%" height="1rem" mb="1rem" />
+                <Skeleton width="30%" height="0.8rem" mb="1.5rem" />
+                <Skeleton height="4rem" />
+              </TimelineItem>
+            ))}
+          </TimelineWrapper>
+        </div>
+      </Section>
     );
+  }
+
+  if (experiences.length === 0) return null;
+
+  return (
+    <Section id="experience">
+      <div className="container">
+        <SectionTitle>Experience Log</SectionTitle>
+        <TimelineWrapper>
+          {experiences.map((exp) => (
+            <TimelineItem key={exp.id}>
+              <Role>{exp.role}</Role>
+              <Company>{exp.company}</Company>
+              <DateRange>{exp.date_range}</DateRange>
+              <Description>{exp.description}</Description>
+            </TimelineItem>
+          ))}
+        </TimelineWrapper>
+      </div>
+    </Section>
+  );
 };
 
 export default Experience;

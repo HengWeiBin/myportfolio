@@ -8,6 +8,7 @@ import Skills from './components/Sections/Skills';
 import Projects from './components/Sections/Projects';
 import Experience from './components/Sections/Experience';
 import Certificates from './components/Sections/Certificates';
+import Contact from './components/Sections/Contact';
 
 // Admin
 import AdminLayout from './pages/Admin/AdminLayout'; // To be created
@@ -22,6 +23,7 @@ function HomePage() {
             <Projects />
             <Experience />
             <Certificates />
+            <Contact />
         </>
     );
 }

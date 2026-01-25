@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import styled from 'styled-components';
-import { getSkills } from '../../services/api';
 
 const Section = styled.section`
   padding: 4rem 0;
@@ -20,23 +19,31 @@ const SectionTitle = styled.h2`
 
 const SkillsGrid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 2rem;
 `;
 
 const SkillCategory = styled.div`
-  background: var(--bg-dark);
-  border: 1px solid var(--border-color);
+  background: rgba(22, 27, 34, 0.6); // Terminal bg with transparency
+  border: 1px solid #30363d;
   padding: 1.5rem;
-  border-radius: 4px;
+  border-radius: 6px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+  transition: transform 0.2s;
+
+  &:hover {
+    transform: translateY(-5px);
+    border-color: var(--primary-color);
+  }
 `;
 
 const CategoryTitle = styled.h3`
-  color: var(--accent);
+  color: var(--primary-color);
   font-size: 1.1rem;
   margin-bottom: 1rem;
-  border-bottom: 1px dashed var(--border-color);
+  border-bottom: 1px solid #30363d;
   padding-bottom: 0.5rem;
+  font-family: var(--font-mono);
 `;
 
 const TagCloud = styled.div`
@@ -47,56 +54,60 @@ const TagCloud = styled.div`
 
 const SkillTag = styled.span`
   font-family: var(--font-mono);
-  font-size: 0.9rem;
-  color: var(--text-primary);
-  background: rgba(255, 255, 255, 0.05);
-  padding: 5px 10px;
-  border-radius: 2px;
+  font-size: 0.85rem;
+  color: var(--text-color);
+  background: #30363d; // Muted gray/blue
+  padding: 4px 10px;
+  border-radius: 4px;
   border: 1px solid transparent;
   transition: all 0.2s;
   
   &:hover {
-    border-color: var(--accent);
-    color: var(--accent);
-    background: rgba(139, 233, 253, 0.1);
+    color: var(--terminal-green);
+    border-color: var(--terminal-green);
+    background: rgba(0, 255, 65, 0.1);
   }
 `;
 
+const SKILLS_DATA = [
+  {
+    category: "Core & Math",
+    items: ["Python", "C++", "NumPy", "SciPy", "Pandas", "Matplotlib"]
+  },
+  {
+    category: "DL Frameworks",
+    items: ["PyTorch", "TensorFlow", "Keras", "Lightning", "JAX"]
+  },
+  {
+    category: "Domains",
+    items: ["NLP / LLMs", "Computer Vision", "Reinforcement Learning", "Generative AI", "Transformers"]
+  },
+  {
+    category: "MLOps & Data",
+    items: ["Hugging Face", "Docker", "PostgreSQL", "RAG", "MLflow", "Vector DBs (FAISS/Chroma)"]
+  }
+];
+
 const Skills = () => {
-    const [skills, setSkills] = useState([]);
-
-    useEffect(() => {
-        getSkills().then(setSkills);
-    }, []);
-
-    // Group skills by category
-    const groupedSkills = skills.reduce((acc, skill) => {
-        if (!acc[skill.category]) {
-            acc[skill.category] = [];
-        }
-        acc[skill.category].push(skill);
-        return acc;
-    }, {});
-
-    return (
-        <Section id="skills">
-            <div className="container">
-                <SectionTitle>My Toolkit</SectionTitle>
-                <SkillsGrid>
-                    {Object.keys(groupedSkills).map((category) => (
-                        <SkillCategory key={category}>
-                            <CategoryTitle>{category}:</CategoryTitle>
-                            <TagCloud>
-                                {groupedSkills[category].map((skill) => (
-                                    <SkillTag key={skill.id}>[{skill.name}]</SkillTag>
-                                ))}
-                            </TagCloud>
-                        </SkillCategory>
-                    ))}
-                </SkillsGrid>
-            </div>
-        </Section>
-    );
+  return (
+    <Section id="skills">
+      <div className="container">
+        <SectionTitle>Technical Arsenal_</SectionTitle>
+        <SkillsGrid>
+          {SKILLS_DATA.map((group) => (
+            <SkillCategory key={group.category}>
+              <CategoryTitle>{group.category}</CategoryTitle>
+              <TagCloud>
+                {group.items.map((skill) => (
+                  <SkillTag key={skill}>[{skill}]</SkillTag>
+                ))}
+              </TagCloud>
+            </SkillCategory>
+          ))}
+        </SkillsGrid>
+      </div>
+    </Section>
+  );
 };
 
 export default Skills;

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-
+import TrainingLog from '../Hero/TrainingLog';
+import { getProfile } from '../../services/api';
 
 const HeroSection = styled.section`
   min-height: 80vh;
@@ -44,11 +45,7 @@ const TerminalBody = styled.div`
   }
 `;
 
-const Greeting = styled.div`
-  color: var(--success);
-  margin-bottom: 1rem;
-  font-size: 1.1rem;
-`;
+// Greeting component removed as it was unused
 
 const Title = styled.h1`
   font-size: 3.5rem;
@@ -96,17 +93,14 @@ const Button = styled.button`
 `;
 
 const Hero = () => {
-  const [typedText, setTypedText] = useState('');
-  const fullText = "> Hello world. I'm Heng Wei Bin.";
+  const [profile, setProfile] = useState(null);
 
   useEffect(() => {
-    if (typedText.length < fullText.length) {
-      const timeout = setTimeout(() => {
-        setTypedText(fullText.slice(0, typedText.length + 1));
-      }, 50); // Typing speed
-      return () => clearTimeout(timeout);
-    }
-  }, [typedText]);
+    getProfile().then(p => setProfile(p)).catch(e => console.error(e));
+  }, []);
+
+  const title = profile?.title || "Machine Learning Engineer \n& AI Researcher.";
+  const subtitle = profile?.bio || "Translating data into intelligence. Specializing in LLMs, Computer Vision, and scalable MLOps pipelines.";
 
   return (
     <HeroSection id="home">
@@ -116,22 +110,24 @@ const Hero = () => {
             <Dot color="#ff5555" />
             <Dot color="#ffb86c" />
             <Dot color="#50fa7b" />
+            <span style={{ color: '#8b949e', fontSize: '0.8rem', marginLeft: 'auto', fontFamily: 'monospace' }}>bash -- 80x24</span>
           </TerminalHeader>
           <TerminalBody>
-            <Greeting>
-              {typedText}<span className="terminal-cursor"></span>
-            </Greeting>
-            <Title>Software Engineer & System Architect.</Title>
-            <Subtitle>Building scalable backend systems and robust APIs.</Subtitle>
+            <TrainingLog />
 
-            <CommandInput>
-              <a href="#projects" onClick={(e) => { e.preventDefault(); document.getElementById('projects').scrollIntoView({ behavior: 'smooth' }) }}>
-                <Button $primary>$ view_projects.sh</Button>
-              </a>
-              <a href="/104.pdf" target="_blank">
-                <Button>$ cat resume.txt</Button>
-              </a>
-            </CommandInput>
+            <div style={{ marginTop: '2rem' }}>
+              <Title dangerouslySetInnerHTML={{ __html: title.replace(/\n/g, '<br/>') }} />
+              <Subtitle>{subtitle}</Subtitle>
+
+              <CommandInput>
+                <a href="#projects" onClick={(e) => { e.preventDefault(); document.getElementById('projects').scrollIntoView({ behavior: 'smooth' }) }}>
+                  <Button $primary>$ view_projects.sh</Button>
+                </a>
+                <a href={profile?.resume_link || "/104.pdf"} target="_blank" rel="noreferrer">
+                  <Button>$ cat resume.txt</Button>
+                </a>
+              </CommandInput>
+            </div>
           </TerminalBody>
         </TerminalWindow>
       </div>

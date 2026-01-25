@@ -58,6 +58,81 @@ export const addCertificate = async (cert) => {
   `;
 };
 
+// ... previous code
+
+export const updateCertificate = async (id, cert) => {
+    return await sql`
+    UPDATE certificates 
+    SET title = ${cert.title}, 
+        issuer = ${cert.issuer || ''}, 
+        date = ${cert.date}, 
+        image_base64 = ${cert.image_base64}, 
+        credential_id = ${cert.credential_id || ''}
+    WHERE id = ${id}
+    RETURNING *
+  `;
+};
+
 export const deleteCertificate = async (id) => {
     return await sql`DELETE FROM certificates WHERE id = ${id}`;
+};
+
+// --- EXPERIENCE CRUD ---
+
+export const addExperience = async (exp) => {
+    return await sql`
+    INSERT INTO experience (role, company, date_range, description)
+    VALUES (${exp.role}, ${exp.company}, ${exp.date_range}, ${exp.description})
+    RETURNING *
+  `;
+};
+
+export const updateExperience = async (id, exp) => {
+    return await sql`
+    UPDATE experience 
+    SET role = ${exp.role}, 
+        company = ${exp.company}, 
+        date_range = ${exp.date_range}, 
+        description = ${exp.description}
+    WHERE id = ${id}
+    RETURNING *
+  `;
+};
+
+export const deleteExperience = async (id) => {
+    return await sql`DELETE FROM experience WHERE id = ${id}`;
+};
+
+// --- PROFILE CRUD ---
+
+export const getProfile = async () => {
+    // Assuming single row with ID 1 or fetch first
+    const result = await sql`SELECT * FROM profile LIMIT 1`;
+    return result[0];
+};
+
+export const updateProfile = async (profile) => {
+    // Upsert logic if id exists, otherwise insert
+    if (profile.id) {
+        return await sql`
+        UPDATE profile 
+        SET name = ${profile.name}, 
+            title = ${profile.title}, 
+            email = ${profile.email}, 
+            phone = ${profile.phone}, 
+            bio = ${profile.bio},
+            github = ${profile.github},
+            linkedin = ${profile.linkedin},
+            instagram = ${profile.instagram},
+            facebook = ${profile.facebook}
+        WHERE id = ${profile.id}
+        RETURNING *
+        `;
+    } else {
+        return await sql`
+        INSERT INTO profile (name, title, email, phone, bio, github, linkedin, instagram, facebook)
+        VALUES (${profile.name}, ${profile.title}, ${profile.email}, ${profile.phone}, ${profile.bio}, ${profile.github}, ${profile.linkedin}, ${profile.instagram}, ${profile.facebook})
+        RETURNING *
+        `;
+    }
 };

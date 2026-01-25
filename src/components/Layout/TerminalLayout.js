@@ -1,6 +1,9 @@
 import React from 'react';
 import styled from 'styled-components';
 import { Link, useLocation } from 'react-router-dom';
+import { getProfile } from '../../services/api';
+import { useState, useEffect } from 'react';
+import LatentSpace from '../Background/LatentSpace';
 
 // --- Styled Components ---
 
@@ -143,17 +146,24 @@ const Navbar = () => {
 };
 
 const Footer = () => {
+  const [profile, setProfile] = useState({});
+
+  useEffect(() => {
+    getProfile().then(p => setProfile(p || {})).catch(e => console.error(e));
+  }, []);
+
   return (
     <FooterContainer>
       <div className="container">
         <div>$ echo "Let's connect."</div>
         <ContactLinks>
-          <a href="https://github.com/HengWeiBin" target="_blank" rel="noreferrer">GitHub</a>
-          <a href="https://www.linkedin.com/" target="_blank" rel="noreferrer">LinkedIn</a>
-          <a href="mailto:hengweibin1898@gmail.com">Email</a>
+          {profile.github && <a href={profile.github} target="_blank" rel="noreferrer">GitHub</a>}
+          {profile.linkedin && <a href={profile.linkedin} target="_blank" rel="noreferrer">LinkedIn</a>}
+          {profile.email && <a href={`mailto:${profile.email}`}>Email</a>}
+          {/* Add others if needed */}
         </ContactLinks>
         <div style={{ marginTop: '2rem', fontSize: '0.8rem', opacity: 0.6 }}>
-          Built with React & Neon DB. © {new Date().getFullYear()}
+          Built with React & Neon DB. © {new Date().getFullYear()} {profile.name}
         </div>
       </div>
     </FooterContainer>
@@ -163,6 +173,7 @@ const Footer = () => {
 export const TerminalLayout = ({ children }) => {
   return (
     <LayoutWrapper>
+      <LatentSpace />
       <Navbar />
       <MainContent>
         {children}
