@@ -12,6 +12,7 @@
     "dotenv": "^17.2.3",
     "framer-motion": "^12.23.26",
     "github-markdown-css": "^5.8.1",
+    "oh-my-opencode": "^3.2.3",
     "pg": "^8.16.3",
     "react": "^18.0.0",
     "react-bootstrap": "^2.3.1",

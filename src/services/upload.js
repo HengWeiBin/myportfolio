@@ -44,6 +44,35 @@ export const uploadImageToR2 = async (file, table) => {
   return publicUrl;
 };
 
+export const deleteImageFromR2 = async (imageUrl) => {
+  if (!imageUrl) return;
+
+  const publicBaseUrl = process.env.REACT_APP_R2_PUBLIC_BASE_URL || '';
+  if (!publicBaseUrl || !imageUrl.startsWith(publicBaseUrl)) {
+    console.warn('Cannot delete: URL does not match R2 public base URL');
+    return;
+  }
+
+  const key = imageUrl.replace(publicBaseUrl + '/', '');
+  if (!key) return;
+
+  const response = await fetch('/.netlify/functions/delete-storage-object', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-admin-key': ADMIN_API_KEY || localStorage.getItem('admin_api_key') || ''
+    },
+    body: JSON.stringify({ key })
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || 'Failed to delete image from R2');
+  }
+
+  return await response.json();
+};
+
 export const fileToBase64 = (file) => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();

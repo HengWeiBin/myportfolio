@@ -8,7 +8,7 @@ import {
     addExperience, updateExperience, deleteExperience,
     getProfile, updateProfile
 } from '../../services/api';
-import { uploadImageToR2 } from '../../services/upload';
+import { uploadImageToR2, deleteImageFromR2 } from '../../services/upload';
 import ConfirmModal from '../../components/Common/ConfirmModal';
 import { AdminTableSkeleton } from '../../components/Common/Loading';
 
@@ -250,6 +250,16 @@ const Dashboard = () => {
 
     const performDelete = async (id) => {
         try {
+            const itemToDelete = data.find(item => item.id === id);
+            
+            if (itemToDelete?.image_url && (activeTab === 'projects' || activeTab === 'certificates')) {
+                try {
+                    await deleteImageFromR2(itemToDelete.image_url);
+                } catch (r2Error) {
+                    console.warn('Failed to delete image from R2:', r2Error);
+                }
+            }
+            
             if (activeTab === 'projects') await deleteProject(id);
             if (activeTab === 'certificates') await deleteCertificate(id);
             if (activeTab === 'experience') await deleteExperience(id);
