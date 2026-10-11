@@ -11,12 +11,11 @@ export const getCertificates = async () => {
 };
 
 export const getSkills = async () => {
-    // Group by category after fetching? Or fetch all and group in frontend.
-    return await sql`SELECT * FROM skills`;
+    return await sql`SELECT * FROM skills ORDER BY id ASC`;
 };
 
 export const getExperience = async () => {
-    return await sql`SELECT * FROM experience ORDER BY id DESC`; // Assuming higher ID is newer or add date column handling
+    return await sql`SELECT * FROM experience ORDER BY id DESC`;
 };
 
 // --- UPDATE DATA (Protected) ---
@@ -57,8 +56,6 @@ export const addCertificate = async (cert) => {
   `;
 };
 
-// ... previous code
-
 export const updateCertificate = async (id, cert) => {
     return await sql`
     UPDATE certificates 
@@ -74,6 +71,30 @@ export const updateCertificate = async (id, cert) => {
 
 export const deleteCertificate = async (id) => {
     return await sql`DELETE FROM certificates WHERE id = ${id}`;
+};
+
+// --- SKILLS CRUD ---
+
+export const addSkill = async (skill) => {
+    return await sql`
+    INSERT INTO skills (category, name)
+    VALUES (${skill.category}, ${skill.name})
+    RETURNING *
+  `;
+};
+
+export const updateSkill = async (id, skill) => {
+    return await sql`
+    UPDATE skills 
+    SET category = ${skill.category}, 
+        name = ${skill.name}
+    WHERE id = ${id}
+    RETURNING *
+  `;
+};
+
+export const deleteSkill = async (id) => {
+    return await sql`DELETE FROM skills WHERE id = ${id}`;
 };
 
 // --- EXPERIENCE CRUD ---
@@ -105,7 +126,6 @@ export const deleteExperience = async (id) => {
 // --- PROFILE CRUD ---
 
 export const getProfile = async () => {
-    // Assuming single row with ID 1 or fetch first
     const result = await sql`SELECT * FROM profile LIMIT 1`;
     return result[0];
 };

@@ -6,7 +6,8 @@ import {
     addProject, updateProject, deleteProject,
     addCertificate, updateCertificate, deleteCertificate,
     addExperience, updateExperience, deleteExperience,
-    getProfile, updateProfile
+    getProfile, updateProfile,
+    getSkills, addSkill, updateSkill, deleteSkill
 } from '../../services/api';
 import { uploadImageToR2, deleteImageFromR2 } from '../../services/upload';
 import ConfirmModal from '../../components/Common/ConfirmModal';
@@ -216,6 +217,9 @@ const Dashboard = () => {
             } else if (activeTab === 'experience') {
                 result = await sql`SELECT * FROM experience ORDER BY id DESC`;
                 setData(result);
+            } else if (activeTab === 'skills') {
+                result = await getSkills();
+                setData(result);
             } else if (activeTab === 'profile') {
                 const p = await getProfile();
                 setProfile(p || {});
@@ -263,6 +267,7 @@ const Dashboard = () => {
             if (activeTab === 'projects') await deleteProject(id);
             if (activeTab === 'certificates') await deleteCertificate(id);
             if (activeTab === 'experience') await deleteExperience(id);
+            if (activeTab === 'skills') await deleteSkill(id);
             
             toast.success('Item deleted successfully');
             setConfirmModal(prev => ({ ...prev, isOpen: false }));
@@ -323,6 +328,9 @@ const Dashboard = () => {
             } else if (activeTab === 'experience') {
                 if (isEdit) await updateExperience(dataToSave.id, dataToSave);
                 else await addExperience(dataToSave);
+            } else if (activeTab === 'skills') {
+                if (isEdit) await updateSkill(dataToSave.id, dataToSave);
+                else await addSkill(dataToSave);
             }
             setShowModal(false);
             setModalData({});
@@ -350,8 +358,8 @@ const Dashboard = () => {
             <Table>
                 <thead>
                     <tr>
-                        <th>Title/Role</th>
-                        <th>Subtitle/Company</th>
+                        <th>{activeTab === 'skills' ? 'Name/Title' : 'Title/Role'}</th>
+                        <th>{activeTab === 'skills' ? 'Category' : 'Subtitle/Company'}</th>
                         <th style={{ width: '150px', textAlign: 'right' }}>Actions</th>
                     </tr>
                 </thead>
@@ -359,11 +367,11 @@ const Dashboard = () => {
                     {data.map(item => (
                         <tr key={item.id}>
                             <td>
-                                <div style={{ fontWeight: 'bold', color: 'var(--text-primary)' }}>{item.title || item.role}</div>
+                                <div style={{ fontWeight: 'bold', color: 'var(--text-primary)' }}>{item.title || item.role || item.name}</div>
                             </td>
                             <td>
                                 <div style={{ color: 'var(--text-secondary)', fontSize: '0.9em' }}>
-                                    {item.company || item.issuer || item.date_end || item.date}
+                                    {item.company || item.issuer || item.date_end || item.date || item.category}
                                 </div>
                             </td>
                             <td style={{ textAlign: 'right' }}>
@@ -426,6 +434,7 @@ const Dashboard = () => {
                 <Tab $active={activeTab === 'certificates'} onClick={() => setActiveTab('certificates')}>Certificates</Tab>
                 <Tab $active={activeTab === 'experience'} onClick={() => setActiveTab('experience')}>Experience</Tab>
                 <Tab $active={activeTab === 'profile'} onClick={() => setActiveTab('profile')}>Profile</Tab>
+                <Tab $active={activeTab === 'skills'} onClick={() => setActiveTab('skills')}>Skills</Tab>
             </TabContainer>
 
             {activeTab === 'profile' ? renderProfileForm() : (
@@ -480,6 +489,13 @@ const Dashboard = () => {
                                     <Input placeholder="Company" value={modalData.company || ''} onChange={e => setModalData({ ...modalData, company: e.target.value })} />
                                     <Input placeholder="Date Range (e.g. 2021 - Present)" value={modalData.date_range || ''} onChange={e => setModalData({ ...modalData, date_range: e.target.value })} />
                                     <TextArea placeholder="Description" value={modalData.description || ''} onChange={e => setModalData({ ...modalData, description: e.target.value })} />
+                                </>
+                            )}
+
+                            {activeTab === 'skills' && (
+                                <>
+                                    <Input placeholder="Skill Name (e.g. PyTorch, Docker)" value={modalData.name || ''} onChange={e => setModalData({ ...modalData, name: e.target.value })} required />
+                                    <Input placeholder="Category (e.g. DL Frameworks, Core & Math)" value={modalData.category || ''} onChange={e => setModalData({ ...modalData, category: e.target.value })} required />
                                 </>
                             )}
 

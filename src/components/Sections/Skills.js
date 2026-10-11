@@ -1,5 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
+import { getSkills } from '../../services/api';
+import { Skeleton } from '../Common/Loading';
 
 const Section = styled.section`
   padding: 4rem 0;
@@ -69,42 +71,56 @@ const SkillTag = styled.span`
   }
 `;
 
-const SKILLS_DATA = [
-  {
-    category: "Core & Math",
-    items: ["Python", "C++", "NumPy", "SciPy", "Pandas", "Matplotlib"]
-  },
-  {
-    category: "DL Frameworks",
-    items: ["PyTorch", "TensorFlow", "Keras", "Lightning", "JAX"]
-  },
-  {
-    category: "Domains",
-    items: ["NLP / LLMs", "Computer Vision", "Reinforcement Learning", "Generative AI", "Transformers"]
-  },
-  {
-    category: "MLOps & Data",
-    items: ["Hugging Face", "Docker", "PostgreSQL", "RAG", "MLflow", "Vector DBs (FAISS/Chroma)"]
-  }
-];
-
 const Skills = () => {
+  const [skillsData, setSkillsData] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchSkills = async () => {
+      try {
+        const skills = await getSkills();
+        // Group skills by category
+        const grouped = skills.reduce((acc, skill) => {
+          if (!acc[skill.category]) acc[skill.category] = [];
+          acc[skill.category].push(skill.name);
+          return acc;
+        }, {});
+        
+        // Convert to array format for rendering
+        const formattedData = Object.keys(grouped).map(category => ({
+          category,
+          items: grouped[category]
+        }));
+        setSkillsData(formattedData);
+      } catch (e) {
+        console.error("Failed to load skills", e);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchSkills();
+  }, []);
+
   return (
     <Section id="skills">
       <div className="container">
         <SectionTitle>Technical Arsenal_</SectionTitle>
-        <SkillsGrid>
-          {SKILLS_DATA.map((group) => (
-            <SkillCategory key={group.category}>
-              <CategoryTitle>{group.category}</CategoryTitle>
-              <TagCloud>
-                {group.items.map((skill) => (
-                  <SkillTag key={skill}>[{skill}]</SkillTag>
-                ))}
-              </TagCloud>
-            </SkillCategory>
-          ))}
-        </SkillsGrid>
+        {loading ? (
+          <Skeleton width="100%" height="200px" />
+        ) : (
+          <SkillsGrid>
+            {skillsData.map((group) => (
+              <SkillCategory key={group.category}>
+                <CategoryTitle>{group.category}</CategoryTitle>
+                <TagCloud>
+                  {group.items.map((skill) => (
+                    <SkillTag key={skill}>[{skill}]</SkillTag>
+                  ))}
+                </TagCloud>
+              </SkillCategory>
+            ))}
+          </SkillsGrid>
+        )}
       </div>
     </Section>
   );
