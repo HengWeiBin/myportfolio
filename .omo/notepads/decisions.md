@@ -134,4 +134,21 @@
    - Configured lifecycle suspension hooks: pauses `requestAnimationFrame` on `document.hidden` and viewport exit (`IntersectionObserver`).
    - Automatically respects `prefers-reduced-motion: reduce`, low hardware concurrency (`navigator.hardwareConcurrency <= 1`), and headless/unsupported WebGL environments by falling back to static poster rendering without battery drain.
 
+## Ticket #8: Modular Admin Dashboard and NDA Case Study Management
+
+1. **Modular Tab and Modal Component Partitioning (< 250 LOC per module)**:
+   - Decomposed monolithic `Dashboard.js` into modular panels (`ProjectsTab`, `ProjectModal`, `CertificatesTab`, `CertificateModal`, `ExperienceTab`, `ExperienceModal`, `SkillsTab`, `SkillModal`, `ProfileTab`).
+   - Slimmed down `Dashboard.js` to 188 LOC, acting purely as an orchestrating container managing data fetching, active tabs, and shared deletion modals.
+
+2. **Unified Tailwind CSS v4 Design Token Component Library (`Shared/`)**:
+   - Built reusable form components under `src/pages/Admin/components/Shared/` (`FormInput`, `FormSelect`, `FormTextarea`, `StatusBadge`, `AdminButton`, `ImageDropzone`) styled entirely with Tailwind CSS v4 tokens (`bg-cyber-card`, `border-cyber-border`, `text-cyan-electric`, `text-terminal-rose`).
+   - Retained backward-compatible API props (e.g. `$danger`) ensuring zero breaking changes across existing patterns.
+
+3. **Split-Screen Live Markdown Authoring with Cyber Styling**:
+   - Integrated live two-pane markdown editing in `ProjectModal` and `ExperienceModal`, rendering input textarea on the left and realtime `ReactMarkdown` preview with cyber dark styling on the right.
+
+4. **Instant In-Place Mutation for Content Tiering and Sort Ordering**:
+   - Added interactive tier selectors (`featured`, `standard`, `foundation`, `archive`) and increment/decrement sorting controls (`▲`/`▼`) directly in `ProjectsTab` and `CertificatesTab` table rows.
+   - Preserved full backward compatibility with Playwright E2E selectors (`button:has-text("+ New Entry")`, `input[placeholder="Title"]`, `textarea[placeholder="Description (Markdown supported)"]`, `button:has-text("Save Changes")`, `button:has-text("UPDATE SYSTEM PROFILE")`).
+
 
