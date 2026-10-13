@@ -38,7 +38,13 @@
   status = 200
 
 [[redirects]]
+  from = "/api/agent/chat"
+  to = "/.netlify/functions/agent-chat"
+  status = 200
+
+[[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
+
 

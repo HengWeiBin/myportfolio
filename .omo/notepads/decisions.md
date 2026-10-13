@@ -78,3 +78,19 @@
    - Updated `src/services/api.js` and `src/pages/Admin/Dashboard.js` to support editing and updating tiered content, sort orders, and NDA parameters.
    - Updated `src/components/Sections/Experience.js` to support markdown rendering for job descriptions via `ReactMarkdown`.
 
+## Ticket #9: Serverless LLM Proxy, Rate Limiting, and Guardrails
+
+1. **At-Rest LLM Credential Encryption (`llm_config` + AES-256-GCM)**:
+   - Added migration `006_llm_config_and_agent_telemetry.sql` and updated `scripts/migrate_db.js` with `llm_config`, `agent_usage`, and `conversations` tables.
+   - Encrypted LLM keys are stored as `{ api_key_encrypted, iv, auth_tag }` and decrypted server-side only when resolving configuration. Decrypted keys are never serialized in API responses, SSE event frames, or client telemetry.
+
+2. **Serverless Streaming LLM Proxy (`/api/agent/chat`)**:
+   - Implemented `netlify/functions/agent-chat.js` responding with `Content-Type: text/event-stream; charset=utf-8`.
+   - Wired redirects in `netlify.toml` (`/api/agent/chat` -> `/.netlify/functions/agent-chat`) and Vite proxy in `vite.config.js`.
+   - Implemented read-only tools: `get_profile`, `list_projects`, `get_experience`, `list_skills`, `list_certificates` with strict NDA redaction (stripping private metrics and setting `link: null` when `is_confidential === true`).
+
+3. **Privacy-Preserving Rate Limiting & Safety Guardrails**:
+   - One-way salted hash `sha256(ip + date + SALT)` ensures user privacy while restricting usage to 5 queries per calendar day.
+   - Quota exhaustion returns structured SSE event: `event: error\ndata: {"code":"RATE_LIMIT_EXCEEDED","message":"Daily rate limit reached. Reverting to scripted playback."}\n\n`.
+   - Built-in guardrails defend against off-topic inquiries, prompt injection attempts, and NDA disclosure requests by redirecting visitors to portfolio inquiries or direct communication.
+

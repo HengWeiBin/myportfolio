@@ -60,3 +60,17 @@
    - Aggregation endpoints serving both public visitors and authenticated admins require robust identity inspection across multiple vectors: `admin_jwt` HttpOnly cookie, `Authorization: Bearer <token>`, and `x-admin-key` header.
    - Graceful redaction (setting `link: null` and `metrics: {}` for non-admins when `is_confidential === true`) prevents NDA data leaks at the network layer while preserving project metadata for portfolio case studies.
 
+## Ticket #9: Serverless LLM Proxy, Rate Limiting, and Guardrails
+
+1. **AES-256-GCM Key Management & In-Memory Key Derivation**:
+   - Node.js native `crypto.createCipheriv` with `aes-256-gcm` requires a 32-byte key and a 12-byte initialization vector (IV). Deriving the key via SHA-256 (`crypto.createHash('sha256').update(secret).digest()`) allows arbitrary secret passphrases while guaranteeing an exact 256-bit key.
+   - Enforcing GCM auth tag verification (`decipher.setAuthTag(...)`) ensures payload tampering or incorrect encryption secrets immediately trigger integrity exceptions instead of silently yielding garbage text.
+
+2. **Daily Salted IP Hashing for Privacy-Preserving Rate Limiting**:
+   - Storing raw visitor IP addresses violates privacy norms and poses compliance risks. Combining `sha256(ip + date + SALT)` creates a one-way rotating hash that strictly isolates quotas to a single UTC calendar day while preventing IP address reversal or persistent tracking.
+   - Employing atomic PostgreSQL `ON CONFLICT (ip_hash, date) DO UPDATE SET request_count = agent_usage.request_count + 1` provides concurrency-safe rate limit counters without distributed locks or Redis overhead.
+
+3. **Server-Sent Events (SSE) Protocol in Serverless Handlers**:
+   - Netlify Function handlers can deliver streaming responses using standard SSE protocol formatting (`Content-Type: text/event-stream; charset=utf-8` with frames `event: <type>\ndata: <json>\n\n`).
+   - Emitting typed SSE events (`event: tool_call`, `event: token`, `event: done`, `event: error`) allows client EventSource / fetch streams to dynamically render tool execution traces, word-by-word streaming typography, and structured rate limit exhaustion notifications.
+
