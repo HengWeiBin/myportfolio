@@ -1,75 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import styled from 'styled-components';
 import { Routes, Route, useNavigate, Link } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { checkSession, logout } from '../../services/auth';
 import Dashboard from './Dashboard';
-
-const Layout = styled.div`
-  display: flex;
-  min-height: 100vh;
-  
-  .Toastify__toast-container {
-    z-index: 9999;
-  }
-  
-  .Toastify__toast {
-    background: var(--bg-dark);
-    color: var(--text-primary);
-    border: 1px solid var(--border-color);
-    font-family: var(--font-mono);
-  }
-  
-  .Toastify__progress-bar {
-    background: var(--accent);
-  }
-  
-  .Toastify__close-button {
-    color: var(--text-secondary);
-  }
-`;
-
-const Sidebar = styled.div`
-  width: 250px;
-  background: var(--bg-dark);
-  border-right: 1px solid var(--border-color);
-  padding: 2rem;
-  display: flex;
-  flex-direction: column;
-`;
-
-const NavItem = styled(Link)`
-  color: var(--text-secondary);
-  padding: 10px;
-  margin-bottom: 5px;
-  display: block;
-  
-  &:hover {
-    color: var(--accent);
-    background: rgba(255,255,255,0.05);
-  }
-`;
-
-const LogoutBtn = styled.button`
-  margin-top: auto;
-  background: transparent;
-  color: var(--danger);
-  border: 1px solid var(--danger);
-  padding: 10px;
-  cursor: pointer;
-  
-  &:hover {
-    background: var(--danger);
-    color: white;
-  }
-`;
-
-const Content = styled.div`
-  flex: 1;
-  padding: 2rem;
-  overflow-y: auto;
-`;
 
 const AdminLayout = () => {
   const navigate = useNavigate();
@@ -100,13 +34,11 @@ const AdminLayout = () => {
 
   if (isAuthenticated === null) {
     return (
-      <Layout>
-        <Content style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)' }}>
-            Verifying session...
-          </div>
-        </Content>
-      </Layout>
+      <div className="flex items-center justify-center min-h-screen bg-cyber-bg">
+        <div className="text-slate-400 font-mono text-sm">
+          Verifying session...
+        </div>
+      </div>
     );
   }
 
@@ -115,21 +47,38 @@ const AdminLayout = () => {
   }
 
   return (
-    <Layout>
-      <Sidebar>
-        <h3 style={{ marginBottom: '2rem', color: 'var(--accent)' }}>Admin Panel</h3>
-        <NavItem to="/admin/dashboard">Dashboard</NavItem>
-        <NavItem to="/">View Site</NavItem>
-        <LogoutBtn onClick={handleLogout}>Logout</LogoutBtn>
-      </Sidebar>
-      <Content>
+    <div className="flex min-h-screen bg-cyber-bg text-slate-100 font-sans">
+      <aside className="w-64 bg-cyber-dark border-r border-cyber-border p-8 flex flex-col shrink-0">
+        <h3 className="mb-8 text-cyan-electric font-mono font-bold text-lg tracking-wider">Admin Panel</h3>
+        <nav className="flex flex-col space-y-1">
+          <Link
+            to="/admin/dashboard"
+            className="text-slate-400 hover:text-cyan-electric hover:bg-white/5 p-2.5 rounded font-mono text-sm transition-colors block"
+          >
+            Dashboard
+          </Link>
+          <Link
+            to="/"
+            className="text-slate-400 hover:text-cyan-electric hover:bg-white/5 p-2.5 rounded font-mono text-sm transition-colors block"
+          >
+            View Site
+          </Link>
+        </nav>
+        <button
+          onClick={handleLogout}
+          className="mt-auto bg-transparent text-rose-400 border border-rose-500/50 hover:bg-rose-500 hover:text-white p-2.5 rounded font-mono text-sm transition-all cursor-pointer text-center"
+        >
+          Logout
+        </button>
+      </aside>
+      <main className="flex-1 p-8 overflow-y-auto">
         <Routes>
           <Route path="dashboard" element={<Dashboard />} />
-          <Route path="*" element={<div>select an option</div>} />
+          <Route path="*" element={<div className="font-mono text-slate-400">select an option</div>} />
         </Routes>
-      </Content>
+      </main>
       <ToastContainer position="bottom-right" theme="dark" />
-    </Layout>
+    </div>
   );
 };
 

@@ -202,6 +202,16 @@ test.describe('Admin Panel', () => {
         })
       });
     });
+
+    await page.route('**/api/admin/crud', async (route) => {
+      const body = route.request().postDataJSON() || {};
+      const { data = {} } = body;
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ success: true, result: [data] })
+      });
+    });
   });
 
   test('Unauthenticated user is redirected to login', async ({ page }) => {

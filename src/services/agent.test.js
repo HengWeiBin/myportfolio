@@ -634,4 +634,75 @@ describe('Netlify Function: POST /api/agent/chat SSE Streaming', () => {
     expect(res.body).not.toContain(DEFAULT_SECRET);
     expect(res.body).not.toContain('api_key_encrypted');
   });
+
+  it('enforces daily token limit and increments blocked_count when limit is reached', async () => {
+    const executedQueries = [];
+    const mockSql = vi.fn(async (strings, ...values) => {
+      const q = strings.join('');
+      executedQueries.push(q);
+      if (q.includes('FROM agent_usage')) {
+        // Return existing usage exceeding daily token limit
+        return [{ request_count: 1, tokens_used: 60000, token_count: 60000, blocked_count: 0 }];
+      }
+      return [];
+    });
+
+    _setCustomSql(mockSql);
+
+    const event = {
+      httpMethod: 'POST',
+      headers: {
+        'client-ip': '198.51.100.99'
+      },
+      body: JSON.stringify({
+        prompt: 'Tell me about the engineer projects'
+      })
+    };
+
+    const res = await agentChatHandler.handler(event);
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toContain('RATE_LIMIT_EXCEEDED');
+
+    // Verify blocked_count update was attempted
+    const hasBlockedUpdate = executedQueries.some(q => q.includes('blocked_count'));
+    expect(hasBlockedUpdate).toBe(true);
+  });
+
+  it('updates token_count and executes 30-day telemetry retention purge on successful chat', async () => {
+    const executedQueries = [];
+    const mockSql = vi.fn(async (strings) => {
+      const q = strings.join('');
+      executedQueries.push(q);
+      if (q.includes('FROM agent_usage')) {
+        return [{ request_count: 0, tokens_used: 0 }];
+      }
+      if (q.includes('FROM projects')) {
+        return [{ id: 1, title: 'DemoProject', tags: ['Python'] }];
+      }
+      return [];
+    });
+
+    _setCustomSql(mockSql);
+
+    const event = {
+      httpMethod: 'POST',
+      headers: {
+        'client-ip': '198.51.100.88'
+      },
+      body: JSON.stringify({
+        prompt: 'Show me your projects'
+      })
+    };
+
+    const res = await agentChatHandler.handler(event);
+    expect(res.statusCode).toBe(200);
+
+    // Verify token_count increment
+    const hasTokenUpdate = executedQueries.some(q => q.includes('token_count') || q.includes('tokens_used'));
+    expect(hasTokenUpdate).toBe(true);
+
+    // Verify 30-day telemetry purge was executed
+    const has30DayPurge = executedQueries.some(q => q.includes("created_at < NOW() - INTERVAL '30 days'"));
+    expect(has30DayPurge).toBe(true);
+  });
 });

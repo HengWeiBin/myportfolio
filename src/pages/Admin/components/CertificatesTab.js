@@ -143,7 +143,7 @@ const CertificatesTab = ({
                     </AdminButton>
                     <AdminButton
                       size="sm"
-                      $danger
+                      variant="danger"
                       onClick={() => onDelete(item.id)}
                     >
                       Delete

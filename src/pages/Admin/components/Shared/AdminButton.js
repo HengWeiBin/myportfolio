@@ -8,6 +8,7 @@ import React from 'react';
 const AdminButton = ({
   children,
   variant = 'primary',
+  danger = false,
   $danger = false,
   size = 'md',
   disabled = false,
@@ -17,7 +18,7 @@ const AdminButton = ({
   onClick,
   ...props
 }) => {
-  const isDanger = $danger || variant === 'danger';
+  const isDanger = danger || $danger || variant === 'danger';
 
   const baseStyles = 'inline-flex items-center justify-center font-mono font-medium rounded transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed select-none';
 

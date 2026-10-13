@@ -262,6 +262,65 @@ exports.handler = async (event) => {
         break;
       }
 
+      // SKILLS
+      case 'addSkill':
+      case 'createSkill': {
+        const { category, name, icon } = data;
+        result = await sql`
+          INSERT INTO skills (category, name, icon)
+          VALUES (${category}, ${name}, ${icon || null})
+          RETURNING *
+        `;
+        break;
+      }
+      case 'updateSkill': {
+        if (!id) throw new Error('Skill id is required for update');
+        const { category, name, icon } = data;
+        result = await sql`
+          UPDATE skills 
+          SET category = ${category}, 
+              name = ${name},
+              icon = ${icon || null}
+          WHERE id = ${id}
+          RETURNING *
+        `;
+        break;
+      }
+      case 'deleteSkill': {
+        if (!id) throw new Error('Skill id is required for deletion');
+        result = await sql`DELETE FROM skills WHERE id = ${id} RETURNING id`;
+        break;
+      }
+
+      // PROFILE
+      case 'updateProfile': {
+        const profileId = id || data.id;
+        if (profileId) {
+          result = await sql`
+            UPDATE profile 
+            SET name = ${data.name}, 
+                title = ${data.title}, 
+                email = ${data.email}, 
+                phone = ${data.phone}, 
+                bio = ${data.bio},
+                github = ${data.github},
+                linkedin = ${data.linkedin},
+                instagram = ${data.instagram},
+                facebook = ${data.facebook},
+                resume_link = ${data.resume_link || null}
+            WHERE id = ${profileId}
+            RETURNING *
+          `;
+        } else {
+          result = await sql`
+            INSERT INTO profile (name, title, email, phone, bio, github, linkedin, instagram, facebook, resume_link)
+            VALUES (${data.name}, ${data.title}, ${data.email}, ${data.phone}, ${data.bio}, ${data.github}, ${data.linkedin}, ${data.instagram}, ${data.facebook}, ${data.resume_link || null})
+            RETURNING *
+          `;
+        }
+        break;
+      }
+
       default:
         return {
           statusCode: 400,

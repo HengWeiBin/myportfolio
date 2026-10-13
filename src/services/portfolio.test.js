@@ -10,10 +10,17 @@ import {
   getProfile,
   addProject,
   updateProject,
+  deleteProject,
   addCertificate,
   updateCertificate,
+  deleteCertificate,
+  addSkill,
+  updateSkill,
+  deleteSkill,
   addExperience,
-  updateExperience
+  updateExperience,
+  deleteExperience,
+  updateProfile
 } from './api';
 import portfolioHandler from '../../netlify/functions/portfolio';
 import adminCrudHandler from '../../netlify/functions/admin-crud';
@@ -469,6 +476,52 @@ describe('Frontend API Service: /api/portfolio consumption & CRUD', () => {
     expect(experience).toEqual(mockExperience);
     expect(certs).toEqual(mockCertificates);
     expect(profile).toEqual(mockProfile);
+  });
+
+  it('admin CRUD methods (addProject, updateProject, deleteProject, etc.) route to /api/admin/crud', async () => {
+    global.fetch.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ success: true, result: [{ id: 99, title: 'Test CRUD' }] })
+    });
+
+    const addRes = await addProject({ title: 'Test CRUD', tier: 'standard' });
+    expect(global.fetch).toHaveBeenCalledWith(
+      expect.stringContaining('/api/admin/crud'),
+      expect.objectContaining({
+        method: 'POST',
+        credentials: 'include',
+        body: expect.stringContaining('"action":"addProject"')
+      })
+    );
+    expect(addRes).toEqual([{ id: 99, title: 'Test CRUD' }]);
+
+    await updateProject(99, { title: 'Updated' });
+    expect(global.fetch).toHaveBeenCalledWith(
+      expect.stringContaining('/api/admin/crud'),
+      expect.objectContaining({
+        method: 'POST',
+        body: expect.stringContaining('"action":"updateProject"')
+      })
+    );
+
+    await deleteProject(99);
+    expect(global.fetch).toHaveBeenCalledWith(
+      expect.stringContaining('/api/admin/crud'),
+      expect.objectContaining({
+        method: 'POST',
+        body: expect.stringContaining('"action":"deleteProject"')
+      })
+    );
+
+    await updateProfile({ id: 1, name: 'Alex' });
+    expect(global.fetch).toHaveBeenCalledWith(
+      expect.stringContaining('/api/admin/crud'),
+      expect.objectContaining({
+        method: 'POST',
+        body: expect.stringContaining('"action":"updateProfile"')
+      })
+    );
   });
 });
 

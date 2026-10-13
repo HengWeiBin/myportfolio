@@ -47,7 +47,7 @@ const verifyAdmin = (event) => {
   const authHeader = event.headers.authorization || event.headers.Authorization;
   if (authHeader && authHeader.startsWith('Bearer ')) {
     const token = authHeader.slice(7).trim();
-    if (token === 'mock-valid-admin-jwt') return true;
+    if (process.env.NODE_ENV === 'test' && token === 'mock-valid-admin-jwt') return true;
     try {
       jwt.verify(token, jwtSecret);
       return true;
@@ -62,7 +62,7 @@ const verifyAdmin = (event) => {
     try {
       const parsed = cookie.parse(cookieHeader);
       if (parsed.admin_jwt) {
-        if (parsed.admin_jwt === 'mock-valid-admin-jwt') return true;
+        if (process.env.NODE_ENV === 'test' && parsed.admin_jwt === 'mock-valid-admin-jwt') return true;
         jwt.verify(parsed.admin_jwt, jwtSecret);
         return true;
       }

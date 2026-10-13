@@ -101,6 +101,35 @@ describe('useClientActions Hook', () => {
 
     document.body.removeChild(elem);
   });
+
+  it('executes open_project action and dispatches open-project custom event', () => {
+    const mockWindowOpen = vi.spyOn(window, 'open').mockImplementation(() => {});
+    const projectElem = document.createElement('div');
+    projectElem.id = 'project-SuperModel';
+    projectElem.setAttribute('data-project-id', '123');
+    const link = document.createElement('a');
+    link.href = 'https://example.com/supermodel';
+    projectElem.appendChild(link);
+    document.body.appendChild(projectElem);
+
+    let eventDispatched = false;
+    const listener = (e) => {
+      eventDispatched = true;
+      expect(e.detail.projectIdentifier).toBe('SuperModel');
+    };
+    window.addEventListener('open-project', listener);
+
+    let capturedActions;
+    render(<TestActionComponent onReady={(acts) => { capturedActions = acts; }} />);
+
+    capturedActions.executeAction('open_project', 'SuperModel');
+    expect(eventDispatched).toBe(true);
+    expect(mockWindowOpen).toHaveBeenCalledWith('https://example.com/supermodel', '_blank', 'noopener,noreferrer');
+
+    window.removeEventListener('open-project', listener);
+    document.body.removeChild(projectElem);
+    mockWindowOpen.mockRestore();
+  });
 });
 
 describe('HeroTerminal Component', () => {

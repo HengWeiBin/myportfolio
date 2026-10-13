@@ -50,7 +50,7 @@ export const AgentProvider = ({ children }) => {
   }, []);
 
   // Client actions hook
-  const { scrollTo, highlightProject, filterSkills, executeAction } = useClientActions({
+  const { scrollTo, highlightProject, filterSkills, openProject, executeAction } = useClientActions({
     setHighlightedProject,
     setActiveSkillFilter,
   });
@@ -349,6 +349,7 @@ export const AgentProvider = ({ children }) => {
     scrollTo,
     highlightProject,
     filterSkills,
+    openProject,
     executeAction,
   };
 
@@ -384,6 +385,7 @@ export const useAgent = () => {
     scrollTo: () => {},
     highlightProject: () => {},
     filterSkills: () => {},
+    openProject: () => {},
     executeAction: () => {},
   };
 };

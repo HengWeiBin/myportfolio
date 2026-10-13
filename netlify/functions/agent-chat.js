@@ -17,6 +17,7 @@ const crypto = require('crypto');
 const { decrypt, hashIp } = require('./utils/crypto');
 
 const DAILY_RATE_LIMIT = parseInt(process.env.AGENT_DAILY_RATE_LIMIT || '5', 10);
+const DAILY_TOKEN_LIMIT = parseInt(process.env.AGENT_DAILY_TOKEN_LIMIT || '50000', 10);
 let customSql = null;
 
 // In-memory fallback rate limiter for environments without active database connection
@@ -205,25 +206,36 @@ async function executeTool(toolName, params = {}, sql) {
 }
 
 /**
- * Checks and increments rate limit for the client IP hash.
+ * Checks and increments rate limit and token limit for the client IP hash.
  * @param {string} ipHash
  * @param {Function} [sql]
  * @param {number} [limit]
- * @returns {Promise<{ allowed: boolean, count: number }>}
+ * @param {number} [tokenLimit]
+ * @returns {Promise<{ allowed: boolean, count: number, tokensUsed: number }>}
  */
-async function checkAndIncrementRateLimit(ipHash, sql, limit = DAILY_RATE_LIMIT) {
+async function checkAndIncrementRateLimit(ipHash, sql, limit = DAILY_RATE_LIMIT, tokenLimit = DAILY_TOKEN_LIMIT) {
   const today = new Date().toISOString().slice(0, 10);
 
   if (sql) {
     try {
-      const existing = await sql`
-        SELECT request_count FROM agent_usage 
-        WHERE ip_hash = ${ipHash} AND date = CURRENT_DATE
-      `;
+      let existing = [];
+      try {
+        existing = await sql`
+          SELECT request_count, tokens_used, token_count, blocked_count FROM agent_usage 
+          WHERE ip_hash = ${ipHash} AND date = CURRENT_DATE
+        `;
+      } catch {
+        existing = await sql`
+          SELECT request_count, tokens_used FROM agent_usage 
+          WHERE ip_hash = ${ipHash} AND date = CURRENT_DATE
+        `;
+      }
 
       const currentCount = existing.length > 0 ? (existing[0].request_count || 0) : 0;
-      if (currentCount >= limit) {
-        return { allowed: false, count: currentCount };
+      const currentTokens = existing.length > 0 ? (existing[0].tokens_used || existing[0].token_count || 0) : 0;
+
+      if (currentCount >= limit || (tokenLimit && currentTokens >= tokenLimit)) {
+        return { allowed: false, count: currentCount, tokensUsed: currentTokens };
       }
 
       // Upsert record
@@ -235,7 +247,7 @@ async function checkAndIncrementRateLimit(ipHash, sql, limit = DAILY_RATE_LIMIT)
                       last_request_at = NOW()
       `;
 
-      return { allowed: true, count: currentCount + 1 };
+      return { allowed: true, count: currentCount + 1, tokensUsed: currentTokens };
     } catch (err) {
       console.warn('[agent-chat] Database rate limit error, falling back to memory map:', err.message);
     }
@@ -243,12 +255,12 @@ async function checkAndIncrementRateLimit(ipHash, sql, limit = DAILY_RATE_LIMIT)
 
   // Memory fallback
   const key = `${ipHash}:${today}`;
-  const count = memoryUsageMap.get(key) || 0;
-  if (count >= limit) {
-    return { allowed: false, count };
+  const record = memoryUsageMap.get(key) || { count: 0, tokens: 0, blocked: 0 };
+  if (record.count >= limit || (tokenLimit && record.tokens >= tokenLimit)) {
+    return { allowed: false, count: record.count, tokensUsed: record.tokens };
   }
-  memoryUsageMap.set(key, count + 1);
-  return { allowed: true, count: count + 1 };
+  memoryUsageMap.set(key, { ...record, count: record.count + 1 });
+  return { allowed: true, count: record.count + 1, tokensUsed: record.tokens };
 }
 
 /**
@@ -256,7 +268,7 @@ async function checkAndIncrementRateLimit(ipHash, sql, limit = DAILY_RATE_LIMIT)
  * Never leaks the decrypted key to the caller or responses.
  * @param {Function} [sql]
  * @param {string} [customSecret]
- * @returns {Promise<{ provider: string, model: string, apiKey: string }|null>}
+ * @returns {Promise<{ provider: string, model: string, apiKey: string, baseUrl?: string, systemPrompt?: string, dailyRateLimit?: number, dailyTokenLimit?: number }|null>}
  */
 async function resolveLlmConfig(sql, customSecret) {
   if (sql) {
@@ -279,7 +291,8 @@ async function resolveLlmConfig(sql, customSecret) {
             apiKey: decryptedKey,
             baseUrl: item.base_url || '',
             systemPrompt: item.system_prompt || '',
-            dailyRateLimit: item.daily_rate_limit || DAILY_RATE_LIMIT
+            dailyRateLimit: item.daily_rate_limit || DAILY_RATE_LIMIT,
+            dailyTokenLimit: item.daily_token_limit || DAILY_TOKEN_LIMIT
           };
         }
       }
@@ -490,10 +503,39 @@ exports.handler = async (event) => {
   // 3. Resolve active LLM config to dynamically apply rate limit and custom prompt
   const llmConfig = await resolveLlmConfig(sql);
   const effectiveRateLimit = (llmConfig && llmConfig.dailyRateLimit) ? Number(llmConfig.dailyRateLimit) : DAILY_RATE_LIMIT;
+  const effectiveTokenLimit = (llmConfig && (llmConfig.dailyTokenLimit || llmConfig.daily_token_limit)) ? Number(llmConfig.dailyTokenLimit || llmConfig.daily_token_limit) : DAILY_TOKEN_LIMIT;
 
   // Rate limiter check
-  const { allowed } = await checkAndIncrementRateLimit(ipHash, sql, effectiveRateLimit);
+  const { allowed } = await checkAndIncrementRateLimit(ipHash, sql, effectiveRateLimit, effectiveTokenLimit);
   if (!allowed) {
+    if (sql) {
+      try {
+        await sql`
+          INSERT INTO agent_usage (ip_hash, date, request_count, tokens_used, last_request_at)
+          VALUES (${ipHash}, CURRENT_DATE, 0, 0, NOW())
+          ON CONFLICT (ip_hash, date)
+          DO NOTHING
+        `;
+        try {
+          await sql`
+            UPDATE agent_usage 
+            SET blocked_count = COALESCE(agent_usage.blocked_count, 0) + 1,
+                last_request_at = NOW()
+            WHERE ip_hash = ${ipHash} AND date = CURRENT_DATE
+          `;
+        } catch {
+          // Column blocked_count may not exist if migrations haven't added it
+        }
+      } catch (err) {
+        console.warn('[agent-chat] Failed to record blocked usage count:', err.message);
+      }
+    } else {
+      const today = new Date().toISOString().slice(0, 10);
+      const key = `${ipHash}:${today}`;
+      const record = memoryUsageMap.get(key) || { count: 0, tokens: 0, blocked: 0 };
+      memoryUsageMap.set(key, { ...record, blocked: (record.blocked || 0) + 1 });
+    }
+
     return {
       statusCode: 200,
       headers: sseHeaders,
@@ -604,14 +646,31 @@ exports.handler = async (event) => {
         )
       `;
 
-      await sql`
-        UPDATE agent_usage 
-        SET tokens_used = agent_usage.tokens_used + ${tokensUsed}
-        WHERE ip_hash = ${ipHash} AND date = CURRENT_DATE
-      `;
+      try {
+        await sql`
+          UPDATE agent_usage 
+          SET tokens_used = agent_usage.tokens_used + ${tokensUsed},
+              token_count = COALESCE(agent_usage.token_count, 0) + ${tokensUsed}
+          WHERE ip_hash = ${ipHash} AND date = CURRENT_DATE
+        `;
+      } catch {
+        await sql`
+          UPDATE agent_usage 
+          SET tokens_used = agent_usage.tokens_used + ${tokensUsed}
+          WHERE ip_hash = ${ipHash} AND date = CURRENT_DATE
+        `;
+      }
+
+      // Run 30-day telemetry retention purge
+      await sql`DELETE FROM conversations WHERE created_at < NOW() - INTERVAL '30 days'`;
     } catch (telemetryErr) {
       console.warn('[agent-chat] Telemetry logging error:', telemetryErr.message);
     }
+  } else {
+    const today = new Date().toISOString().slice(0, 10);
+    const key = `${ipHash}:${today}`;
+    const record = memoryUsageMap.get(key) || { count: 0, tokens: 0, blocked: 0 };
+    memoryUsageMap.set(key, { ...record, tokens: (record.tokens || 0) + tokensUsed });
   }
 
   return {

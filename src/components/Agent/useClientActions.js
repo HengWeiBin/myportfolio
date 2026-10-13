@@ -71,6 +71,34 @@ export function useClientActions({
     return true;
   }, [setActiveSkillFilter, scrollTo]);
 
+  const openProject = useCallback((projectIdentifier) => {
+    if (typeof window === 'undefined' || !projectIdentifier) return false;
+
+    highlightProject(projectIdentifier);
+
+    const safeTarget = String(projectIdentifier).trim();
+    const element =
+      document.getElementById(`project-${safeTarget}`) ||
+      document.querySelector(`[data-project-title*="${safeTarget}"]`) ||
+      document.querySelector(`[data-project-id="${safeTarget}"]`);
+
+    const event = new CustomEvent('open-project', {
+      bubbles: true,
+      detail: { projectIdentifier: safeTarget, element }
+    });
+    window.dispatchEvent(event);
+
+    if (element) {
+      const linkEl = element.tagName === 'A' ? element : element.querySelector('a[href]');
+      if (linkEl && linkEl.href && !linkEl.href.startsWith('javascript:')) {
+        window.open(linkEl.href, '_blank', 'noopener,noreferrer');
+        return true;
+      }
+      return true;
+    }
+    return false;
+  }, [highlightProject]);
+
   const executeAction = useCallback((action, targetArg) => {
     let type = '';
     let target = '';
@@ -90,16 +118,21 @@ export function useClientActions({
         return highlightProject(target);
       case 'filter_skills':
         return filterSkills(target);
+      case 'open_project':
+      case 'openProject':
+        return openProject(target);
       default:
         console.warn(`[useClientActions] Unknown action type: ${type}`);
         return false;
     }
-  }, [scrollTo, highlightProject, filterSkills]);
+  }, [scrollTo, highlightProject, filterSkills, openProject]);
 
   return {
     scrollTo,
     highlightProject,
     filterSkills,
+    openProject,
+    open_project: openProject,
     executeAction,
   };
 }
