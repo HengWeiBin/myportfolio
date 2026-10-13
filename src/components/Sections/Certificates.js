@@ -1,134 +1,14 @@
 import React, { useState } from 'react';
-import styled from 'styled-components';
 import { usePortfolio } from '../../context/ProfileContext';
 import { Skeleton, SkeletonCard } from '../Common/Loading';
-
-const Section = styled.section`
-  padding: 4rem 0;
-`;
-
-const SectionTitle = styled.h2`
-  color: var(--text-secondary);
-  font-family: var(--font-mono);
-  margin-bottom: 3rem;
-  
-  &::before {
-    content: '$ ls ';
-    color: var(--success);
-  }
-  &::after {
-    content: ' /var/log/achievements/';
-  }
-`;
-
-const Grid = styled.div`
-  display: grid;
-  gap: 20px;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-`;
-
-const Card = styled.div`
-  background: ${props => props.$highlight ? 'rgba(88, 166, 255, 0.05)' : 'rgba(255, 255, 255, 0.02)'};
-  border: 1px solid ${props => props.$highlight ? 'var(--primary-color)' : 'var(--border-color)'};
-  padding: 20px;
-  position: relative;
-  transition: all 0.2s;
-  border-left: ${props => props.$highlight ? '4px solid var(--primary-color)' : '1px solid var(--border-color)'};
-  
-  &:hover {
-    border-color: var(--accent);
-    box-shadow: 0 0 15px rgba(139, 233, 253, 0.1);
-    transform: translateY(-2px);
-  }
-`;
-
-const Header = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-`;
-
-const TypeBadge = styled.span`
-  font-family: var(--font-mono);
-  font-size: 0.7rem;
-  padding: 2px 6px;
-  border-radius: 4px;
-  background: ${props => props.$bg || '#333'};
-  color: ${props => props.$color || '#fff'};
-  text-transform: uppercase;
-  letter-spacing: 1px;
-`;
-
-const Title = styled.h3`
-  font-family: var(--font-mono);
-  font-size: 1rem;
-  line-height: 1.4;
-  margin-bottom: 0.5rem;
-  color: var(--text-primary);
-`;
-
-const MetaData = styled.div`
-  font-size: 0.8rem;
-  color: var(--text-secondary);
-  margin-bottom: 1rem;
-  
-  span {
-    display: inline-block;
-    margin-right: 15px;
-  }
-`;
-
-const ViewButton = styled.button`
-  background: transparent;
-  border: 1px dashed var(--border-color);
-  color: var(--text-secondary);
-  padding: 6px 12px;
-  font-size: 0.8rem;
-  font-family: var(--font-mono);
-  cursor: pointer;
-  width: 100%;
-  text-align: left;
-  transition: all 0.2s;
-  
-  &:hover {
-    border-color: var(--accent);
-    color: var(--accent);
-    background: rgba(0,255,65,0.05);
-  }
-`;
-
-const ModalOverlay = styled.div`
-  position: fixed;
-  top: 0; left:0; right:0; bottom:0;
-  background: rgba(0,0,0,0.85);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 2000;
-  backdrop-filter: blur(5px);
-`;
-
-const ModalContent = styled.div`
-  max-width: 90%;
-  max-height: 90%;
-  
-  img {
-    max-width: 100%;
-    max-height: 80vh;
-    border: 1px solid var(--terminal-green);
-    box-shadow: 0 0 30px rgba(0, 255, 65, 0.2);
-  }
-`;
 
 const Certificates = () => {
   const { certificates: achievements = [], loading } = usePortfolio();
   const [selectedImage, setSelectedImage] = useState(null);
 
-  // Helper to categorize achievements if categorical data is missing
   const getCategory = (item) => {
     if (item.category) return item.category;
-    const lowerTitle = item.title.toLowerCase();
+    const lowerTitle = (item.title || '').toLowerCase();
     if (lowerTitle.includes('paper') || lowerTitle.includes('conference') || lowerTitle.includes('journal')) return 'Paper';
     if (lowerTitle.includes('competition') || lowerTitle.includes('hackathon') || lowerTitle.includes('award')) return 'Competition';
     return 'Certificate';
@@ -136,13 +16,27 @@ const Certificates = () => {
 
   const getTypeStyles = (type) => {
     switch (type) {
-      case 'Paper': return { bg: 'rgba(88, 166, 255, 0.2)', color: '#58a6ff', label: 'PUBLICATION' };
-      case 'Competition': return { bg: 'rgba(210, 153, 34, 0.2)', color: '#d29922', label: 'AWARD' };
-      default: return { bg: 'rgba(56, 139, 253, 0.1)', color: '#8b949e', label: 'CERT' };
+      case 'Paper':
+        return {
+          bg: 'bg-cyan-electric/15 text-cyan-electric border-cyan-electric/30',
+          label: 'PUBLICATION',
+          icon: '📄'
+        };
+      case 'Competition':
+        return {
+          bg: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
+          label: 'AWARD',
+          icon: '🏆'
+        };
+      default:
+        return {
+          bg: 'bg-purple-500/15 text-purple-300 border-purple-500/30',
+          label: 'CERTIFICATION',
+          icon: '📜'
+        };
     }
   };
 
-  // Sort: Papers > Competitions > Certs
   const sortedAchievements = [...achievements].sort((a, b) => {
     const score = (type) => {
       if (type === 'Paper') return 3;
@@ -153,61 +47,118 @@ const Certificates = () => {
   });
 
   return (
-    <Section id="certificates">
-      <div className="container">
-        <SectionTitle>Credentials</SectionTitle>
+    <section id="certificates" className="py-20 border-b border-cyber-border relative">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Section Header */}
+        <div className="mb-14">
+          <div className="text-xs font-mono text-cyan-electric tracking-widest uppercase mb-1">
+            04 // PEER RECOGNITION
+          </div>
+          <h2 className="text-2xl sm:text-3xl font-mono font-bold text-slate-100 flex items-center gap-2">
+            <span className="text-emerald-400">$ ls</span>
+            <span>/var/log/credentials/</span>
+          </h2>
+        </div>
+
+        {/* Loading Skeleton */}
         {loading ? (
-          <Grid>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[1, 2, 3].map(i => (
               <SkeletonCard key={i}>
-                <Skeleton width="40%" height="1.2rem" mb="1rem" />
-                <Skeleton width="80%" height="1.5rem" mb="1rem" />
-                <Skeleton width="60%" height="1rem" mb="1rem" />
+                <Skeleton width="40%" height="1.2rem" />
+                <Skeleton width="80%" height="1.5rem" />
+                <Skeleton width="60%" height="1rem" />
                 <Skeleton width="30%" height="2rem" />
               </SkeletonCard>
             ))}
-          </Grid>
+          </div>
         ) : (
-          <Grid>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {sortedAchievements.map((item) => {
               const category = getCategory(item);
               const styles = getTypeStyles(category);
               const isHighlight = category === 'Paper' || category === 'Competition';
 
               return (
-                <Card key={item.id} $highlight={isHighlight}>
-                  <Header>
-                    <TypeBadge $bg={styles.bg} $color={styles.color}>{styles.label}</TypeBadge>
-                    <span style={{ fontSize: '1.2rem', opacity: 0.5 }}>
-                      {category === 'Paper' ? '📄' : category === 'Competition' ? '🏆' : '📜'}
-                    </span>
-                  </Header>
-                  <Title>{item.title}</Title>
-                  <MetaData>
-                    <span>{item.date}</span>
-                    <span>{item.issuer}</span>
-                  </MetaData>
+                <div
+                  key={item.id || item.title}
+                  className={`glass-panel p-6 rounded-xl border flex flex-col justify-between transition-all duration-300 hover:-translate-y-1 ${
+                    isHighlight
+                      ? 'border-cyan-500/40 bg-cyan-electric/[0.03] hover:shadow-[0_0_20px_rgba(0,240,255,0.15)]'
+                      : 'border-cyber-border hover:border-slate-500'
+                  }`}
+                >
+                  <div>
+                    <div className="flex items-center justify-between mb-3">
+                      <span className={`text-[10px] font-mono font-bold tracking-wider px-2 py-0.5 rounded border ${styles.bg}`}>
+                        {styles.label}
+                      </span>
+                      <span className="text-base" role="img" aria-label={styles.label}>
+                        {styles.icon}
+                      </span>
+                    </div>
+
+                    <h3 className="font-mono text-base font-bold text-slate-100 leading-snug mb-2 hover:text-cyan-electric transition-colors">
+                      {item.title}
+                    </h3>
+
+                    <div className="text-xs font-mono text-slate-400 space-y-1 mb-4">
+                      {item.date && <div>date: {item.date}</div>}
+                      {item.issuer && <div>issuer: {item.issuer}</div>}
+                    </div>
+                  </div>
 
                   {item.image_url && (
-                    <ViewButton onClick={() => setSelectedImage(item.image_url)}>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedImage(item.image_url)}
+                      className="mt-4 w-full text-left font-mono text-xs text-slate-400 hover:text-cyan-electric border border-dashed border-cyber-border hover:border-cyan-400/50 hover:bg-cyan-electric/5 px-3 py-2 rounded transition-colors focus:outline-none focus:ring-1 focus:ring-cyan-400"
+                    >
                       &gt; view_proof.jpg
-                    </ViewButton>
+                    </button>
                   )}
-                </Card>
+                </div>
               );
             })}
-          </Grid>
+          </div>
         )}
       </div>
 
+      {/* Proof Modal Overlay */}
       {selectedImage && (
-        <ModalOverlay onClick={() => setSelectedImage(null)}>
-          <ModalContent onClick={e => e.stopPropagation()}>
-            <img src={selectedImage} alt="Credential Proof" />
-          </ModalContent>
-        </ModalOverlay>
+        <div
+          className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-in fade-in duration-200"
+          onClick={() => setSelectedImage(null)}
+          role="dialog"
+          aria-modal="true"
+          aria-label="Credential Proof Modal"
+        >
+          <div
+            className="max-w-4xl max-h-[90vh] bg-cyber-card border border-cyan-electric/50 rounded-xl overflow-hidden shadow-2xl relative"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-4 py-2 bg-cyber-surface border-b border-cyber-border">
+              <span className="font-mono text-xs text-slate-300">proof_viewer.exe</span>
+              <button
+                type="button"
+                onClick={() => setSelectedImage(null)}
+                className="text-slate-400 hover:text-white font-mono text-sm px-2 py-0.5 rounded hover:bg-rose-500/20"
+                aria-label="Close proof preview"
+              >
+                [X]
+              </button>
+            </div>
+            <div className="p-2 overflow-auto max-h-[80vh]">
+              <img
+                src={selectedImage}
+                alt="Credential Proof Preview"
+                className="max-w-full max-h-[75vh] object-contain mx-auto rounded"
+              />
+            </div>
+          </div>
+        </div>
       )}
-    </Section>
+    </section>
   );
 };
 

@@ -1,69 +1,115 @@
-/* Terminal / Latent Space Theme Variables */
+@import "tailwindcss";
+
+@theme {
+  --font-mono: "Fira Code", monospace;
+  --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+
+  /* Cyber & Mission Control Dark Backgrounds */
+  --color-cyber-black: #05070a;
+  --color-cyber-bg: #07090e;
+  --color-cyber-dark: #0a0d14;
+  --color-cyber-card: #0f1422;
+  --color-cyber-surface: #131a29;
+  --color-cyber-panel: #172033;
+  --color-cyber-border: #1e293b;
+  --color-cyber-border-bright: #334155;
+
+  /* Electric Cyan & Neon Purple Accents */
+  --color-cyan-electric: #00f0ff;
+  --color-cyan-dim: rgba(0, 240, 255, 0.15);
+  --color-purple-neon: #a855f7;
+  --color-purple-dim: rgba(168, 85, 247, 0.15);
+  --color-terminal-green: #10b981;
+  --color-terminal-amber: #f59e0b;
+  --color-terminal-rose: #f43f5e;
+}
+
+/* CSS Variables for Admin compatibility & Global styling */
 :root {
-  --bg-color: #0d1117;
-  /* GitHub Dark Dimmed / Terminal Black */
-  --text-color: #c9d1d9;
-  /* Off-white text */
-  --primary-color: #58a6ff;
-  /* Terminal Blue */
-  --secondary-color: #238636;
-  /* Success Green */
-  --accent-color: #00ff41;
-  /* CRT Green */
-  --terminal-bg: #161b22;
-  --terminal-green: #00ff41;
-  --font-mono: 'Consolas', 'Monaco', 'Courier New', monospace;
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --nav-height: 70px;
+  --bg-color: #07090e;
+  --bg-dark: #05070a;
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --accent: #00f0ff;
+  --accent-glow: rgba(0, 240, 255, 0.35);
+  --border-color: #1e293b;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #f43f5e;
+  --primary-color: #00f0ff;
+  --font-mono: 'Fira Code', 'Courier New', monospace;
+  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
 body {
   margin: 0;
   font-family: var(--font-sans);
+  background-color: var(--bg-color);
+  color: var(--text-primary);
+  min-height: 100vh;
+  overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: var(--bg-color);
-  color: var(--text-color);
-  overflow-x: hidden;
 }
 
-/* Terminal Aesthetics */
-code,
-pre,
-.terminal-font {
-  font-family: var(--font-mono);
+/* Glassmorphism & Panel Utilities */
+.glass-panel {
+  background: rgba(13, 17, 26, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.terminal-card {
-  background: var(--terminal-bg);
-  border: 1px solid #30363d;
-  border-radius: 6px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+.glass-panel-glow {
+  background: rgba(15, 20, 34, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(0, 240, 255, 0.25);
+  box-shadow: 0 0 25px rgba(0, 240, 255, 0.08);
+}
+
+.glass-card {
+  background: rgba(15, 20, 34, 0.6);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(30, 41, 59, 0.8);
+}
+
+.glass-card:hover {
+  border-color: rgba(0, 240, 255, 0.4);
+  box-shadow: 0 0 20px rgba(0, 240, 255, 0.12);
+}
+
+/* Electric Cyan-to-Purple Accent Gradients */
+.gradient-cyber {
+  background: linear-gradient(135deg, #00f0ff 0%, #a855f7 100%);
+}
+
+.text-gradient-cyber {
+  background: linear-gradient(135deg, #00f0ff 0%, #a855f7 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.border-gradient-cyber {
+  border-image: linear-gradient(135deg, rgba(0, 240, 255, 0.5), rgba(168, 85, 247, 0.5)) 1;
 }
 
 /* Scrollbar */
 ::-webkit-scrollbar {
-  width: 10px;
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--bg-color);
+  background: #07090e;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #30363d;
-  border-radius: 5px;
+  background: #1e293b;
+  border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #8b949e;
-}
-
-/* Utilities */
-.text-terminal {
-  color: var(--terminal-green);
-}
-
-.bg-terminal {
-  background-color: var(--terminal-bg);
+  background: #334155;
 }

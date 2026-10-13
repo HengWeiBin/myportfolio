@@ -1,80 +1,5 @@
 import React, { useEffect } from 'react';
-import styled from 'styled-components';
 import { motion, AnimatePresence } from 'framer-motion';
-
-const Overlay = styled(motion.div)`
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.85);
-  backdrop-filter: blur(4px);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 9999;
-`;
-
-const ModalContainer = styled(motion.div)`
-  background: var(--bg-dark);
-  border: 1px solid var(--border-color);
-  width: 90%;
-  max-width: 500px;
-  box-shadow: 0 0 40px rgba(0, 0, 0, 0.8);
-  overflow: hidden;
-  font-family: var(--font-mono);
-`;
-
-const Header = styled.div`
-  background: #1f2428;
-  padding: 10px 15px;
-  border-bottom: 1px solid var(--border-color);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  
-  h3 {
-    margin: 0;
-    font-size: 0.9rem;
-    color: var(--text-secondary);
-    text-transform: uppercase;
-    letter-spacing: 1px;
-  }
-`;
-
-const Content = styled.div`
-  padding: 2rem;
-  color: var(--text-primary);
-  
-  p {
-    margin-bottom: 2rem;
-    line-height: 1.6;
-  }
-`;
-
-const ButtonGroup = styled.div`
-  display: flex;
-  justify-content: flex-end;
-  gap: 1rem;
-`;
-
-const Button = styled.button`
-  background: ${props => props.$primary ? 'var(--danger)' : 'transparent'};
-  color: ${props => props.$primary ? 'white' : 'var(--text-secondary)'};
-  border: 1px solid ${props => props.$primary ? 'var(--danger)' : 'var(--border-color)'};
-  padding: 8px 20px;
-  cursor: pointer;
-  font-family: var(--font-mono);
-  font-size: 0.9rem;
-  transition: all 0.2s ease;
-
-  &:hover {
-    background: ${props => props.$primary ? '#ff3333' : 'rgba(255,255,255,0.05)'};
-    border-color: ${props => props.$primary ? '#ff3333' : 'var(--text-primary)'};
-    color: ${props => props.$primary ? 'white' : 'var(--text-primary)'};
-  }
-`;
 
 const ConfirmModal = ({ isOpen, title, message, onConfirm, onCancel, confirmText = "Confirm", cancelText = "Cancel" }) => {
   useEffect(() => {
@@ -90,35 +15,53 @@ const ConfirmModal = ({ isOpen, title, message, onConfirm, onCancel, confirmText
   return (
     <AnimatePresence>
       {isOpen && (
-        <Overlay
+        <motion.div
+          className="fixed inset-0 bg-black/85 backdrop-blur-sm flex justify-center items-center z-[9999]"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={onCancel}
         >
-          <ModalContainer
+          <motion.div
+            className="bg-cyber-dark border border-cyber-border w-[90%] max-w-[500px] shadow-2xl overflow-hidden font-mono"
             initial={{ scale: 0.95, opacity: 0, y: 20 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0.95, opacity: 0, y: 20 }}
             onClick={e => e.stopPropagation()}
           >
-            <Header>
-              <h3>{title || 'System Warning'}</h3>
-              <div style={{ display: 'flex', gap: '6px' }}>
-                <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#ff5f56' }}></div>
-                <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#ffbd2e' }}></div>
-                <div style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#27c93f' }}></div>
+            <div className="bg-[#1f2428] px-4 py-2.5 border-b border-cyber-border flex justify-between items-center">
+              <h3 className="m-0 text-xs font-mono text-slate-400 uppercase tracking-wider">
+                {title || 'System Warning'}
+              </h3>
+              <div className="flex gap-1.5">
+                <div className="w-2.5 h-2.5 rounded-full bg-[#ff5f56]" />
+                <div className="w-2.5 h-2.5 rounded-full bg-[#ffbd2e]" />
+                <div className="w-2.5 h-2.5 rounded-full bg-[#27c93f]" />
               </div>
-            </Header>
-            <Content>
-              <p>{message}</p>
-              <ButtonGroup>
-                <Button onClick={onCancel}>{cancelText}</Button>
-                <Button $primary onClick={onConfirm}>{confirmText}</Button>
-              </ButtonGroup>
-            </Content>
-          </ModalContainer>
-        </Overlay>
+            </div>
+            <div className="p-6 text-slate-200">
+              <p className="mb-6 leading-relaxed font-sans text-sm text-slate-300">
+                {message}
+              </p>
+              <div className="flex justify-end gap-3 font-mono text-xs">
+                <button
+                  type="button"
+                  onClick={onCancel}
+                  className="px-4 py-2 border border-cyber-border text-slate-300 hover:text-white hover:border-slate-500 hover:bg-white/5 transition-colors"
+                >
+                  {cancelText}
+                </button>
+                <button
+                  type="button"
+                  onClick={onConfirm}
+                  className="px-4 py-2 bg-rose-600 border border-rose-600 text-white hover:bg-rose-700 transition-colors"
+                >
+                  {confirmText}
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </motion.div>
       )}
     </AnimatePresence>
   );

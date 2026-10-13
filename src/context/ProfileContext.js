@@ -23,7 +23,10 @@ export const ProfileProvider = ({ children }) => {
         skills: data.skills || [],
         projects: data.projects || [],
         experience: data.experience || [],
-        certificates: data.certificates || []
+        certificates: data.certificates || [],
+        tiered_projects: data.tiered_projects || {},
+        tiered_certificates: data.tiered_certificates || {},
+        tiered: data.tiered || { projects: {}, certificates: {} }
       });
       setError(null);
     } catch (err) {
@@ -49,6 +52,9 @@ export const ProfileProvider = ({ children }) => {
     projects: portfolio.projects,
     experience: portfolio.experience,
     certificates: portfolio.certificates,
+    tiered_projects: portfolio.tiered_projects || {},
+    tiered_certificates: portfolio.tiered_certificates || {},
+    tiered: portfolio.tiered || { projects: {}, certificates: {} },
     loading,
     error,
     refreshPortfolio,

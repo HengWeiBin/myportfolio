@@ -1,366 +1,239 @@
 import React from 'react';
-import styled from 'styled-components';
 import ReactMarkdown from 'react-markdown';
+import { Link } from 'react-router-dom';
 import { usePortfolio } from '../../context/ProfileContext';
-
-// Visualizations
 import NeuralArch from '../Visualizations/NeuralArch';
 import CodeBlock from '../Visualizations/CodeBlock';
 import ResultViz from '../Visualizations/ResultViz';
 import { Skeleton } from '../Common/Loading';
-import 'github-markdown-css/github-markdown.css'
 
-const Section = styled.section`
-  padding: 4rem 0;
-  border-bottom: 1px solid var(--border-color);
-`;
-
-const SectionTitle = styled.h2`
-  color: var(--text-secondary);
-  font-family: var(--font-mono);
-  margin-bottom: 3rem;
-  
-  &::before {
-    content: '/* ';
-    color: var(--text-secondary);
-  }
-  &::after {
-    content: ' */';
-    color: var(--text-secondary);
-  }
-`;
-
-const ProjectCard = styled.div`
-  display: flex;
-  flex-direction: column;
-  background: var(--bg-dark);
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-  margin-bottom: 4rem;
-  overflow: hidden;
-  transition: transform 0.2s;
-  
-  &:hover {
-    border-color: var(--accent);
-  }
-
-  @media (min-width: 768px) {
-    flex-direction: row;
-    height: 400px;
-  }
-`;
-
-const VisualArea = styled.div`
-  flex: 1;
-  background: #000;
-  position: relative;
-  overflow: hidden;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-bottom: 1px solid var(--border-color);
-  
-  @media (min-width: 768px) {
-    border-right: 1px solid var(--border-color);
-    border-bottom: none;
-    flex: 1.2;
-  }
-  
-  img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    opacity: 0.8;
-    transition: opacity 0.3s;
-  }
-
-  &:hover img {
-    opacity: 1;
-  }
-`;
-
-const ContentArea = styled.div`
-  flex: 1;
-  padding: 2rem;
-  display: flex;
-  flex-direction: column;
-`;
-
-const ProjectTitle = styled.h3`
-  font-size: 1.8rem;
-  color: var(--text-primary);
-  margin-bottom: 0.5rem;
-`;
-
-const TechStack = styled.div`
-  margin-bottom: 1.5rem;
-  font-family: var(--font-mono);
-  font-size: 0.85rem;
-  color: var(--warning);
-`;
-
-const Description = styled.div`
-  /* --- Layout & Base --- */
-  color: var(--text-secondary);
-  font-size: 0.95rem;
-  line-height: 1.7; /* 稍微增加行高，提升閱讀舒適度 */
-  margin-bottom: 2rem;
-  flex-grow: 1;
-  overflow-y: auto;
-  
-  /* --- Typography & Markdown Styles --- */
-  
-  /* 通用間距：除了最後一個元素外，都保持底部間距 */
-  > *:not(:last-child) {
-    margin-bottom: 1.25rem;
-  }
-
-  /* 標題 H1-H6 */
-  h1, h2, h3, h4, h5, h6 {
-    color: var(--text-primary, #fff); /* 建議使用更亮的顏色對比 */
-    font-weight: 600;
-    line-height: 1.3;
-    margin-top: 2rem;
-    margin-bottom: 1rem;
-  }
-  
-  h1 { font-size: 1.8rem; }
-  h2 { font-size: 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 0.3rem; }
-  h3 { font-size: 1.25rem; }
-
-  /* 段落 P */
-  p {
-    margin-bottom: 1rem;
-    color: inherit;
-  }
-
-  /* 連結 A */
-  a {
-    color: var(--accent);
-    text-decoration: none;
-    font-weight: 500;
-    border-bottom: 1px solid transparent;
-    transition: border-color 0.2s ease, opacity 0.2s;
-
-    &:hover {
-      border-bottom-color: var(--accent);
-      opacity: 0.9;
-    }
-  }
-
-  /* 列表 UL, OL */
-  ul, ol {
-    padding-left: 1.5rem;
-  }
-  
-  li {
-    margin-bottom: 0.5rem;
-    padding-left: 0.25rem;
-    
-    /* 讓列表內的文字對齊更好看 */
-    &::marker {
-      color: var(--text-secondary); 
-      opacity: 0.7;
-    }
-  }
-
-  /* 引用 Blockquote */
-  blockquote {
-    border-left: 4px solid var(--accent);
-    background: rgba(127, 127, 127, 0.05); /* 極淡的背景 */
-    margin: 1.5rem 0;
-    padding: 0.8rem 1rem;
-    font-style: italic;
-    color: var(--text-secondary);
-    border-radius: 0 4px 4px 0;
-  }
-
-  /* 行內程式碼 Code (Inline) */
-  :not(pre) > code {
-    background: rgba(110, 118, 129, 0.2); /* 降低不透明度，讓文字更融合 */
-    color: var(--accent, #58a6ff); /* 讓程式碼有點顏色 */
-    padding: 0.2em 0.4em;
-    border-radius: 6px;
-    font-size: 0.85em;
-    font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
-    border: 1px solid rgba(255, 255, 255, 0.05); /* 微妙的邊框 */
-  }
-
-  /* 程式碼區塊 Pre > Code (Block) */
-  pre {
-    background: #1e1e1e; /* 深色背景，模擬 IDE */
-    padding: 1rem;
-    border-radius: 8px;
-    overflow-x: auto;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    
-    code {
-      background: transparent;
-      padding: 0;
-      color: #e6edf3;
-      font-size: 0.9rem;
-      font-family: 'JetBrains Mono', 'Fira Code', monospace; /* 推薦使用現代程式碼字體 */
-    }
-  }
-
-  /* 圖片 Img */
-  img {
-    max-width: 100%;
-    height: auto;
-    border-radius: 8px;
-    margin: 1.5rem 0;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-  }
-  
-  /* 表格 Table (如果有的話) */
-  table {
-    width: 100%;
-    border-collapse: collapse;
-    margin: 1.5rem 0;
-    
-    th, td {
-      padding: 0.75rem;
-      border: 1px solid rgba(255,255,255,0.1);
-      text-align: left;
-    }
-    
-    th {
-      background: rgba(255,255,255,0.05);
-      font-weight: 600;
-    }
-  }
-
-  /* 捲軸樣式優化 */
-  &::-webkit-scrollbar {
-    width: 6px;
-  }
-  &::-webkit-scrollbar-track {
-    background: transparent;
-  }
-  &::-webkit-scrollbar-thumb {
-    background-color: rgba(155, 155, 155, 0.3);
-    border-radius: 20px;
-    border: transparent;
-  }
-`;
-
-const Links = styled.div`
-  display: flex;
-  gap: 1.5rem;
-  font-family: var(--font-mono);
-  margin-top: auto;
-`;
-
-const LinkBtn = styled.a`
-  color: var(--accent);
-  font-size: 0.9rem;
-  text-decoration: none;
-  border-bottom: 1px dashed var(--accent);
-  
-  &:hover {
-    border-bottom-style: solid;
-  }
-`;
-
-// Configuration to map specific projects to visualizations
-// In a real app, this "type" could be stored in the DB
 const PROJECT_VISUALS = {
-  // Example mapping based on potential project titles or IDs
-  // 'CenterFusionDetect3D': <ResultViz label="Car" confidence="0.98" />,
-  // 'TransformerModel': <NeuralArch />,
   'CenterFusionDetect3D': 'ResultViz',
   'StudentsRegistrationSystem': 'CodeBlock',
   'RadarCameraFusion': 'NeuralArch',
 };
 
 const Projects = () => {
-  const { projects, loading } = usePortfolio();
+  const { projects = [], loading } = usePortfolio();
+
+  // Highlight featured projects first, followed by others, excluding archived items if featured exist
+  const featuredProjects = React.useMemo(() => {
+    if (!projects || projects.length === 0) return [];
+    
+    const featured = projects.filter(p => (p.tier || '').toLowerCase() === 'featured');
+    if (featured.length > 0) {
+      // If we have explicit featured items, show featured plus standard, prioritized
+      const standard = projects.filter(p => (p.tier || '').toLowerCase() === 'standard');
+      return [...featured, ...standard];
+    }
+    // Fallback: show all projects
+    return projects;
+  }, [projects]);
 
   const renderVisual = (project) => {
-    // 1. Check if there's a mapped visual type (direct attribute or title lookup)
     const visualType = project.visual_type && project.visual_type !== 'image'
       ? project.visual_type
-      : (PROJECT_VISUALS[project.title] || PROJECT_VISUALS[Object.keys(PROJECT_VISUALS).find(k => project.title?.includes(k))]);
+      : (PROJECT_VISUALS[project.title] || Object.keys(PROJECT_VISUALS).find(k => project.title?.includes(k)) ? PROJECT_VISUALS[Object.keys(PROJECT_VISUALS).find(k => project.title?.includes(k))] : null);
 
     if (visualType === 'NeuralArch') return <NeuralArch />;
-    if (visualType === 'CodeBlock') return <CodeBlock code={`# Core Algorithm\ndef fuse_sensors(radar, camera):\n    """\n    Fuse radar point clouds with\n    camera image features.\n    """\n    return kalman_filter(radar, camera)`} />;
-    if (visualType === 'ResultViz') return <ResultViz label="Pedestrian" confidence="0.92" image={project.image_url} />;
-
-    if (project.image_url) {
-      return <img src={project.image_url} alt={project.title} loading="lazy" />;
+    if (visualType === 'CodeBlock') {
+      return (
+        <CodeBlock
+          code={`# Core Algorithm: Sensor Fusion\ndef fuse_sensors(radar, camera):\n    """\n    Fuse radar point clouds with\n    camera image features.\n    """\n    return kalman_filter(radar, camera)`}
+          language="python"
+        />
+      );
+    }
+    if (visualType === 'ResultViz') {
+      return <ResultViz label="Pedestrian" confidence="0.92" image={project.image_url} />;
     }
 
-    // 3. Default fallback
+    if (project.image_url) {
+      return (
+        <img
+          src={project.image_url}
+          alt={project.title}
+          loading="lazy"
+          className="w-full h-full object-cover opacity-85 hover:opacity-100 transition-opacity duration-300"
+        />
+      );
+    }
+
     return (
-      <div style={{ color: 'var(--text-secondary)', padding: '2px', fontFamily: 'monospace', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0d1117' }}>
-        <CodeBlock language="bash" code={`> locating_assets...\n> error: visualization_not_found\n> using_fallback_mode...`} />
+      <div className="w-full h-full flex items-center justify-center bg-[#0d1117] p-2">
+        <CodeBlock
+          language="bash"
+          code={`> locating_assets...\n> status: ok\n> architecture: multi-head attention`}
+        />
       </div>
     );
   };
 
   return (
-    <Section id="projects">
-      <div className="container">
-        <SectionTitle>Featured Projects</SectionTitle>
+    <section id="projects" className="py-20 border-b border-cyber-border relative">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Section Header */}
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-12 gap-4">
+          <div>
+            <div className="text-xs font-mono text-cyan-electric tracking-widest uppercase mb-1">
+              01 // MISSION ARTIFACTS
+            </div>
+            <h2 className="text-2xl sm:text-3xl font-mono font-bold text-slate-100 flex items-center gap-2">
+              <span className="text-slate-500">/*</span>
+              <span>Featured Projects</span>
+              <span className="text-slate-500">*/</span>
+            </h2>
+          </div>
 
+          <Link
+            to="/archive"
+            className="text-xs sm:text-sm font-mono text-cyan-electric hover:text-cyan-300 flex items-center gap-1.5 border border-cyan-electric/30 bg-cyan-electric/10 px-3 py-1.5 rounded transition-all hover:bg-cyan-electric/20"
+          >
+            <span>View All Archives & Foundation</span>
+            <span>&rarr;</span>
+          </Link>
+        </div>
+
+        {/* Loading Skeleton */}
         {loading ? (
-          [1, 2].map(i => (
-            <ProjectCard key={i} style={{ pointerEvents: 'none' }}>
-              <div style={{ flex: 1, minHeight: '300px', background: '#0d1117' }} />
-              <ContentArea>
-                <Skeleton width="70%" height="2rem" mb="1.5rem" />
-                <Skeleton width="40%" height="1rem" mb="1.5rem" />
-                <Skeleton height="80px" mb="2rem" />
-                <Skeleton width="30%" />
-              </ContentArea>
-            </ProjectCard>
-          ))
+          <div className="space-y-12">
+            {[1, 2].map(i => (
+              <div
+                key={i}
+                className="flex flex-col md:flex-row bg-cyber-card/60 border border-cyber-border rounded-lg overflow-hidden min-h-[380px]"
+              >
+                <div className="flex-1 bg-cyber-surface/60 min-h-[250px] animate-pulse" />
+                <div className="flex-1 p-6 sm:p-8 space-y-4">
+                  <Skeleton width="60%" height="2rem" />
+                  <Skeleton width="35%" height="1rem" />
+                  <Skeleton height="5rem" />
+                  <Skeleton width="40%" height="1.5rem" />
+                </div>
+              </div>
+            ))}
+          </div>
         ) : (
-          projects.map((project) => (
-            <ProjectCard key={project.id}>
-              <VisualArea>
-                {renderVisual(project)}
-              </VisualArea>
-              <ContentArea>
-                <ProjectTitle>{project.title}</ProjectTitle>
-                <TechStack>
-                  [{project.date_start} - {project.date_end}]
-                </TechStack>
-                {project.metrics && typeof project.metrics === 'object' && Object.keys(project.metrics).length > 0 && (
-                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '1rem' }}>
-                    {Object.entries(project.metrics).map(([key, val]) => (
-                      <span key={key} style={{
-                        fontFamily: 'var(--font-mono)',
-                        fontSize: '0.75rem',
-                        padding: '2px 8px',
-                        borderRadius: '3px',
-                        background: 'rgba(88, 166, 255, 0.1)',
-                        border: '1px solid rgba(88, 166, 255, 0.3)',
-                        color: 'var(--accent)'
-                      }}>
-                        {key}: {String(val)}
-                      </span>
-                    ))}
+          <div className="space-y-12">
+            {featuredProjects.map((project) => {
+              const isFeaturedTier = (project.tier || '').toLowerCase() === 'featured';
+
+              return (
+                <article
+                  key={project.id || project.title}
+                  className={`flex flex-col md:flex-row bg-cyber-card/70 border rounded-xl overflow-hidden transition-all duration-300 hover:shadow-[0_0_30px_rgba(0,240,255,0.12)] ${
+                    isFeaturedTier
+                      ? 'border-cyan-500/40 hover:border-cyan-electric'
+                      : 'border-cyber-border hover:border-slate-500'
+                  }`}
+                >
+                  {/* Left: Interactive Visual Simulation Area */}
+                  <div className="flex-1 md:w-5/12 bg-black min-h-[260px] md:min-h-[380px] relative overflow-hidden flex items-center justify-center border-b md:border-b-0 md:border-r border-cyber-border">
+                    {renderVisual(project)}
                   </div>
-                )}
-                <Description>
-                  <ReactMarkdown>{project.description}</ReactMarkdown>
-                </Description>
-                <Links>
-                  {project.is_confidential ? (
-                    <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', fontFamily: 'var(--font-mono)' }}>
-                      🔒 [NDA Protected / Client Confidential]
-                    </span>
-                  ) : (
-                    project.link && <LinkBtn href={project.link} target="_blank">[View Source / Demo]</LinkBtn>
-                  )}
-                </Links>
-              </ContentArea>
-            </ProjectCard>
-          ))
+
+                  {/* Right: Technical Specifications & Narrative */}
+                  <div className="flex-1 md:w-7/12 p-6 sm:p-8 flex flex-col justify-between">
+                    <div>
+                      {/* Tier Badge & Date */}
+                      <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
+                        <div className="flex items-center gap-2">
+                          {isFeaturedTier && (
+                            <span className="text-[10px] uppercase font-mono font-bold tracking-wider px-2 py-0.5 rounded bg-cyan-electric/20 text-cyan-electric border border-cyan-electric/40">
+                              ★ FEATURED
+                            </span>
+                          )}
+                          <span className="text-xs font-mono text-amber-400">
+                            [{project.date_start || '2021'} - {project.date_end || 'PRESENT'}]
+                          </span>
+                        </div>
+
+                        {project.repo_visibility && (
+                          <span className="text-[11px] font-mono text-slate-500">
+                            visibility: {project.repo_visibility}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Project Title */}
+                      <h3 className="text-xl sm:text-2xl font-mono font-bold text-slate-100 mb-3 hover:text-cyan-electric transition-colors">
+                        {project.title}
+                      </h3>
+
+                      {/* Metric Chips */}
+                      {project.metrics && typeof project.metrics === 'object' && Object.keys(project.metrics).length > 0 && (
+                        <div className="flex flex-wrap gap-2 mb-4">
+                          {Object.entries(project.metrics).map(([key, val]) => (
+                            <span
+                              key={key}
+                              className="font-mono text-xs px-2.5 py-1 rounded-md bg-cyan-electric/10 border border-cyan-electric/30 text-cyan-electric flex items-center gap-1.5"
+                            >
+                              <span className="text-slate-400 uppercase text-[10px]">{key}:</span>
+                              <span className="font-bold">{String(val)}</span>
+                            </span>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Tags / Tech Chips */}
+                      {project.tags && (
+                        <div className="flex flex-wrap gap-1.5 mb-4">
+                          {(Array.isArray(project.tags) ? project.tags : String(project.tags).split(',')).map((tag, idx) => (
+                            <span
+                              key={idx}
+                              className="text-[11px] font-mono px-2 py-0.5 rounded bg-cyber-panel text-slate-300 border border-cyber-border"
+                            >
+                              #{String(tag).trim()}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Markdown Narrative */}
+                      <div className="text-sm font-sans text-slate-300 leading-relaxed mb-6 space-y-2 max-h-48 overflow-y-auto pr-2">
+                        <ReactMarkdown>{project.description}</ReactMarkdown>
+                      </div>
+                    </div>
+
+                    {/* Action Links & NDA Safeguards */}
+                    <div className="pt-4 border-t border-cyber-border/60 flex items-center justify-between font-mono text-sm">
+                      {project.is_confidential ? (
+                        <div className="flex items-center gap-2 text-rose-400 text-xs sm:text-sm bg-rose-500/10 border border-rose-500/30 px-3 py-1.5 rounded">
+                          <span>🔒</span>
+                          <span className="font-semibold">[NDA Protected / Client Confidential]</span>
+                        </div>
+                      ) : (
+                        project.link && (
+                          <a
+                            href={project.link}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-2 text-cyan-electric hover:text-cyan-300 hover:underline font-semibold focus:outline-none focus:ring-1 focus:ring-cyan-400"
+                          >
+                            <span>[View Source / Demo]</span>
+                            <span>&rarr;</span>
+                          </a>
+                        )
+                      )}
+                    </div>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
         )}
+
+        {/* Bottom Call to Action for Archive */}
+        <div className="mt-16 text-center">
+          <Link
+            to="/archive"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-lg font-mono text-sm font-semibold bg-cyber-card border border-purple-500/40 text-purple-300 hover:text-white hover:bg-purple-600/20 hover:border-purple-400 transition-all shadow-lg"
+          >
+            <span>&gt; browse_complete_archive.exe ({projects.length} artifacts)</span>
+            <span>&rarr;</span>
+          </Link>
+        </div>
       </div>
-    </Section>
+    </section>
   );
 };
 

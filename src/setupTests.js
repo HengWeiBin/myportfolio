@@ -16,6 +16,16 @@ if (typeof HTMLCanvasElement !== 'undefined') {
   });
 }
 
+// Mock IntersectionObserver in jsdom environment
+if (typeof window !== 'undefined' && !window.IntersectionObserver) {
+  window.IntersectionObserver = class IntersectionObserver {
+    constructor() {}
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  };
+}
+
 // Default mock for /api/portfolio in jsdom tests
 const defaultPortfolio = {
   profile: {

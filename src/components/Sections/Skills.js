@@ -1,88 +1,17 @@
 import React, { useMemo } from 'react';
-import styled from 'styled-components';
 import { usePortfolio } from '../../context/ProfileContext';
 import { Skeleton } from '../Common/Loading';
-
-const Section = styled.section`
-  padding: 4rem 0;
-  border-bottom: 1px solid var(--border-color);
-`;
-
-const SectionTitle = styled.h2`
-  color: var(--text-secondary);
-  font-family: var(--font-mono);
-  margin-bottom: 2rem;
-  
-  &::before {
-    content: '// ';
-    color: var(--warning);
-  }
-`;
-
-const SkillsGrid = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 2rem;
-`;
-
-const SkillCategory = styled.div`
-  background: rgba(22, 27, 34, 0.6); // Terminal bg with transparency
-  border: 1px solid #30363d;
-  padding: 1.5rem;
-  border-radius: 6px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-  transition: transform 0.2s;
-
-  &:hover {
-    transform: translateY(-5px);
-    border-color: var(--primary-color);
-  }
-`;
-
-const CategoryTitle = styled.h3`
-  color: var(--primary-color);
-  font-size: 1.1rem;
-  margin-bottom: 1rem;
-  border-bottom: 1px solid #30363d;
-  padding-bottom: 0.5rem;
-  font-family: var(--font-mono);
-`;
-
-const TagCloud = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.8rem;
-`;
-
-const SkillTag = styled.span`
-  font-family: var(--font-mono);
-  font-size: 0.85rem;
-  color: var(--text-color);
-  background: #30363d; // Muted gray/blue
-  padding: 4px 10px;
-  border-radius: 4px;
-  border: 1px solid transparent;
-  transition: all 0.2s;
-  
-  &:hover {
-    color: var(--terminal-green);
-    border-color: var(--terminal-green);
-    background: rgba(0, 255, 65, 0.1);
-  }
-`;
 
 const Skills = () => {
   const { skills = [], loading } = usePortfolio();
 
   const skillsData = useMemo(() => {
-    // Group skills by category
     const grouped = (skills || []).reduce((acc, skill) => {
       if (!acc[skill.category]) acc[skill.category] = [];
       acc[skill.category].push(skill.name);
       return acc;
     }, {});
 
-    // Convert to array format for rendering
     return Object.keys(grouped).map(category => ({
       category,
       items: grouped[category]
@@ -90,27 +19,67 @@ const Skills = () => {
   }, [skills]);
 
   return (
-    <Section id="skills">
-      <div className="container">
-        <SectionTitle>Technical Arsenal_</SectionTitle>
+    <section id="skills" className="py-20 border-b border-cyber-border relative">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Section Header */}
+        <div className="mb-14">
+          <div className="text-xs font-mono text-cyan-electric tracking-widest uppercase mb-1">
+            03 // TECHNICAL ARSENAL
+          </div>
+          <h2 className="text-2xl sm:text-3xl font-mono font-bold text-slate-100 flex items-center gap-2">
+            <span className="text-amber-400">//</span>
+            <span>Capabilities & Stack</span>
+            <span className="text-slate-500 font-normal text-lg">_</span>
+          </h2>
+        </div>
+
+        {/* Loading Skeleton */}
         {loading ? (
-          <Skeleton width="100%" height="200px" />
-        ) : (
-          <SkillsGrid>
-            {skillsData.map((group) => (
-              <SkillCategory key={group.category}>
-                <CategoryTitle>{group.category}</CategoryTitle>
-                <TagCloud>
-                  {group.items.map((skill) => (
-                    <SkillTag key={skill}>[{skill}]</SkillTag>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[1, 2, 3].map(i => (
+              <div key={i} className="glass-panel p-6 rounded-xl border border-cyber-border space-y-4">
+                <Skeleton width="40%" height="1.5rem" />
+                <div className="flex flex-wrap gap-2">
+                  {[1, 2, 3, 4, 5].map(j => (
+                    <Skeleton key={j} width="80px" height="1.5rem" />
                   ))}
-                </TagCloud>
-              </SkillCategory>
+                </div>
+              </div>
             ))}
-          </SkillsGrid>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {skillsData.map((group) => (
+              <div
+                key={group.category}
+                className="glass-panel p-6 sm:p-7 rounded-xl border border-cyber-border hover:border-cyan-500/40 hover:-translate-y-1 transition-all duration-300 shadow-lg group"
+              >
+                <div className="flex items-center justify-between pb-3 mb-4 border-b border-cyber-border">
+                  <h3 className="font-mono text-base font-bold text-cyan-electric flex items-center gap-2">
+                    <span className="text-slate-500">&gt;</span>
+                    {group.category}
+                  </h3>
+                  <span className="text-[11px] font-mono text-slate-500">
+                    {group.items.length} modules
+                  </span>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  {group.items.map((skill) => (
+                    <span
+                      key={skill}
+                      className="font-mono text-xs px-2.5 py-1 rounded bg-cyber-card text-slate-300 border border-cyber-border hover:text-emerald-400 hover:border-emerald-500/50 hover:bg-emerald-500/10 transition-all cursor-default"
+                    >
+                      [{skill}]
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
         )}
       </div>
-    </Section>
+    </section>
   );
 };
 
