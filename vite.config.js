@@ -57,6 +57,11 @@ export default defineConfig(({ mode }) => {
           changeOrigin: true,
           rewrite: () => '/.netlify/functions/auth-session',
         },
+        '/api/agent/chat': {
+          target: 'http://localhost:9999',
+          changeOrigin: true,
+          rewrite: () => '/.netlify/functions/agent-chat',
+        },
         '/api': {
           target: 'http://localhost:9999',
           changeOrigin: true,
