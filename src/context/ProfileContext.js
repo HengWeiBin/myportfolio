@@ -1,37 +1,62 @@
-import React, { createContext, useState, useEffect, useContext } from 'react';
-import { getProfile } from '../services/api';
+import React, { createContext, useState, useEffect, useContext, useCallback } from 'react';
+import { fetchPortfolioData } from '../services/api';
 
 const ProfileContext = createContext();
 
 export const ProfileProvider = ({ children }) => {
-  const [profile, setProfile] = useState(null);
+  const [portfolio, setPortfolio] = useState({
+    profile: null,
+    skills: [],
+    projects: [],
+    experience: [],
+    certificates: []
+  });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  const fetchProfile = async () => {
+  const fetchPortfolio = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await getProfile();
-      setProfile(data || {});
+      const data = await fetchPortfolioData();
+      setPortfolio({
+        profile: data.profile || {},
+        skills: data.skills || [],
+        projects: data.projects || [],
+        experience: data.experience || [],
+        certificates: data.certificates || []
+      });
       setError(null);
     } catch (err) {
-      console.error("Failed to fetch profile:", err);
+      console.error('Failed to fetch portfolio data:', err);
       setError(err);
     } finally {
       setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    fetchProfile();
   }, []);
 
-  const refreshProfile = () => {
-    fetchProfile();
+  useEffect(() => {
+    fetchPortfolio();
+  }, [fetchPortfolio]);
+
+  const refreshPortfolio = () => {
+    fetchPortfolio();
+  };
+
+  const contextValue = {
+    portfolio,
+    profile: portfolio.profile,
+    skills: portfolio.skills,
+    projects: portfolio.projects,
+    experience: portfolio.experience,
+    certificates: portfolio.certificates,
+    loading,
+    error,
+    refreshPortfolio,
+    refreshProfile: refreshPortfolio
   };
 
   return (
-    <ProfileContext.Provider value={{ profile, loading, error, refreshProfile }}>
+    <ProfileContext.Provider value={contextValue}>
       {children}
     </ProfileContext.Provider>
   );
@@ -41,6 +66,14 @@ export const useProfile = () => {
   const context = useContext(ProfileContext);
   if (context === undefined) {
     throw new Error('useProfile must be used within a ProfileProvider');
+  }
+  return context;
+};
+
+export const usePortfolio = () => {
+  const context = useContext(ProfileContext);
+  if (context === undefined) {
+    throw new Error('usePortfolio must be used within a ProfileProvider');
   }
   return context;
 };

@@ -1,27 +1,51 @@
-import sql from './db';
+// --- FETCH DATA (Unified Serverless Endpoint) ---
 
-// --- FETCH DATA ---
+export const fetchPortfolioData = async () => {
+  const baseUrl = typeof window !== 'undefined' && window.location?.origin
+    ? window.location.origin
+    : '';
+  const response = await fetch(`${baseUrl}/api/portfolio`);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch portfolio data: ${response.status} ${response.statusText}`);
+  }
+  return await response.json();
+};
 
 export const getProjects = async () => {
-    return await sql`SELECT * FROM projects ORDER BY date_end DESC`;
+  const data = await fetchPortfolioData();
+  return data.projects || [];
 };
 
 export const getCertificates = async () => {
-    return await sql`SELECT * FROM certificates ORDER BY date DESC`;
+  const data = await fetchPortfolioData();
+  return data.certificates || [];
 };
 
 export const getSkills = async () => {
-    return await sql`SELECT * FROM skills ORDER BY id ASC`;
+  const data = await fetchPortfolioData();
+  return data.skills || [];
 };
 
 export const getExperience = async () => {
-    return await sql`SELECT * FROM experience ORDER BY id DESC`;
+  const data = await fetchPortfolioData();
+  return data.experience || [];
 };
 
-// --- UPDATE DATA (Protected) ---
+export const getProfile = async () => {
+  const data = await fetchPortfolioData();
+  return data.profile || {};
+};
+
+// --- UPDATE DATA (Protected Admin Methods - to be migrated in Ticket #4) ---
+
+const getAdminSql = async () => {
+  const db = await import('./db');
+  return db.default;
+};
 
 export const addProject = async (project) => {
-    return await sql`
+  const sql = await getAdminSql();
+  return await sql`
     INSERT INTO projects (title, description, link, date_start, date_end, image_url, tags)
     VALUES (${project.title}, ${project.description}, ${project.link}, ${project.date_start}, ${project.date_end}, ${project.image_url || null}, ${project.tags})
     RETURNING *
@@ -29,7 +53,8 @@ export const addProject = async (project) => {
 };
 
 export const updateProject = async (id, project) => {
-    return await sql`
+  const sql = await getAdminSql();
+  return await sql`
     UPDATE projects 
     SET title = ${project.title}, 
         description = ${project.description}, 
@@ -44,12 +69,13 @@ export const updateProject = async (id, project) => {
 };
 
 export const deleteProject = async (id) => {
-    return await sql`DELETE FROM projects WHERE id = ${id}`;
+  const sql = await getAdminSql();
+  return await sql`DELETE FROM projects WHERE id = ${id}`;
 };
 
-
 export const addCertificate = async (cert) => {
-    return await sql`
+  const sql = await getAdminSql();
+  return await sql`
     INSERT INTO certificates (title, issuer, date, image_url, credential_id)
     VALUES (${cert.title}, ${cert.issuer || ''}, ${cert.date}, ${cert.image_url || null}, ${cert.credential_id || ''})
     RETURNING *
@@ -57,7 +83,8 @@ export const addCertificate = async (cert) => {
 };
 
 export const updateCertificate = async (id, cert) => {
-    return await sql`
+  const sql = await getAdminSql();
+  return await sql`
     UPDATE certificates 
     SET title = ${cert.title}, 
         issuer = ${cert.issuer || ''}, 
@@ -70,13 +97,15 @@ export const updateCertificate = async (id, cert) => {
 };
 
 export const deleteCertificate = async (id) => {
-    return await sql`DELETE FROM certificates WHERE id = ${id}`;
+  const sql = await getAdminSql();
+  return await sql`DELETE FROM certificates WHERE id = ${id}`;
 };
 
 // --- SKILLS CRUD ---
 
 export const addSkill = async (skill) => {
-    return await sql`
+  const sql = await getAdminSql();
+  return await sql`
     INSERT INTO skills (category, name)
     VALUES (${skill.category}, ${skill.name})
     RETURNING *
@@ -84,7 +113,8 @@ export const addSkill = async (skill) => {
 };
 
 export const updateSkill = async (id, skill) => {
-    return await sql`
+  const sql = await getAdminSql();
+  return await sql`
     UPDATE skills 
     SET category = ${skill.category}, 
         name = ${skill.name}
@@ -94,13 +124,15 @@ export const updateSkill = async (id, skill) => {
 };
 
 export const deleteSkill = async (id) => {
-    return await sql`DELETE FROM skills WHERE id = ${id}`;
+  const sql = await getAdminSql();
+  return await sql`DELETE FROM skills WHERE id = ${id}`;
 };
 
 // --- EXPERIENCE CRUD ---
 
 export const addExperience = async (exp) => {
-    return await sql`
+  const sql = await getAdminSql();
+  return await sql`
     INSERT INTO experience (role, company, date_range, description)
     VALUES (${exp.role}, ${exp.company}, ${exp.date_range}, ${exp.description})
     RETURNING *
@@ -108,7 +140,8 @@ export const addExperience = async (exp) => {
 };
 
 export const updateExperience = async (id, exp) => {
-    return await sql`
+  const sql = await getAdminSql();
+  return await sql`
     UPDATE experience 
     SET role = ${exp.role}, 
         company = ${exp.company}, 
@@ -120,38 +153,35 @@ export const updateExperience = async (id, exp) => {
 };
 
 export const deleteExperience = async (id) => {
-    return await sql`DELETE FROM experience WHERE id = ${id}`;
+  const sql = await getAdminSql();
+  return await sql`DELETE FROM experience WHERE id = ${id}`;
 };
 
 // --- PROFILE CRUD ---
 
-export const getProfile = async () => {
-    const result = await sql`SELECT * FROM profile LIMIT 1`;
-    return result[0];
-};
-
 export const updateProfile = async (profile) => {
-    if (profile.id) {
-        return await sql`
-        UPDATE profile 
-        SET name = ${profile.name}, 
-            title = ${profile.title}, 
-            email = ${profile.email}, 
-            phone = ${profile.phone}, 
-            bio = ${profile.bio},
-            github = ${profile.github},
-            linkedin = ${profile.linkedin},
-            instagram = ${profile.instagram},
-            facebook = ${profile.facebook},
-            resume_link = ${profile.resume_link || null}
-        WHERE id = ${profile.id}
-        RETURNING *
-        `;
-    } else {
-        return await sql`
-        INSERT INTO profile (name, title, email, phone, bio, github, linkedin, instagram, facebook, resume_link)
-        VALUES (${profile.name}, ${profile.title}, ${profile.email}, ${profile.phone}, ${profile.bio}, ${profile.github}, ${profile.linkedin}, ${profile.instagram}, ${profile.facebook}, ${profile.resume_link || null})
-        RETURNING *
-        `;
-    }
+  const sql = await getAdminSql();
+  if (profile.id) {
+    return await sql`
+      UPDATE profile 
+      SET name = ${profile.name}, 
+          title = ${profile.title}, 
+          email = ${profile.email}, 
+          phone = ${profile.phone}, 
+          bio = ${profile.bio},
+          github = ${profile.github},
+          linkedin = ${profile.linkedin},
+          instagram = ${profile.instagram},
+          facebook = ${profile.facebook},
+          resume_link = ${profile.resume_link || null}
+      WHERE id = ${profile.id}
+      RETURNING *
+    `;
+  } else {
+    return await sql`
+      INSERT INTO profile (name, title, email, phone, bio, github, linkedin, instagram, facebook, resume_link)
+      VALUES (${profile.name}, ${profile.title}, ${profile.email}, ${profile.phone}, ${profile.bio}, ${profile.github}, ${profile.linkedin}, ${profile.instagram}, ${profile.facebook}, ${profile.resume_link || null})
+      RETURNING *
+    `;
+  }
 };

@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import styled from 'styled-components';
-import sql from '../../services/db';
+import { usePortfolio } from '../../context/ProfileContext';
+import { Skeleton, SkeletonCard } from '../Common/Loading';
 
 const Section = styled.section`
   padding: 4rem 0;
@@ -121,20 +122,8 @@ const ModalContent = styled.div`
 `;
 
 const Certificates = () => {
-  const [achievements, setAchievements] = useState([]);
+  const { certificates: achievements = [], loading } = usePortfolio();
   const [selectedImage, setSelectedImage] = useState(null);
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const data = await sql`SELECT * FROM certificates ORDER BY date DESC`;
-        setAchievements(data);
-      } catch (e) {
-        console.error(e);
-      }
-    };
-    fetchData();
-  }, []);
 
   // Helper to categorize achievements if categorical data is missing
   const getCategory = (item) => {
@@ -166,35 +155,48 @@ const Certificates = () => {
     <Section id="certificates">
       <div className="container">
         <SectionTitle>Credentials</SectionTitle>
-        <Grid>
-          {sortedAchievements.map((item) => {
-            const category = getCategory(item);
-            const styles = getTypeStyles(category);
-            const isHighlight = category === 'Paper' || category === 'Competition';
+        {loading ? (
+          <Grid>
+            {[1, 2, 3].map(i => (
+              <SkeletonCard key={i}>
+                <Skeleton width="40%" height="1.2rem" mb="1rem" />
+                <Skeleton width="80%" height="1.5rem" mb="1rem" />
+                <Skeleton width="60%" height="1rem" mb="1rem" />
+                <Skeleton width="30%" height="2rem" />
+              </SkeletonCard>
+            ))}
+          </Grid>
+        ) : (
+          <Grid>
+            {sortedAchievements.map((item) => {
+              const category = getCategory(item);
+              const styles = getTypeStyles(category);
+              const isHighlight = category === 'Paper' || category === 'Competition';
 
-            return (
-              <Card key={item.id} $highlight={isHighlight}>
-                <Header>
-                  <TypeBadge $bg={styles.bg} $color={styles.color}>{styles.label}</TypeBadge>
-                  <span style={{ fontSize: '1.2rem', opacity: 0.5 }}>
-                    {category === 'Paper' ? '📄' : category === 'Competition' ? '🏆' : '📜'}
-                  </span>
-                </Header>
-                <Title>{item.title}</Title>
-                <MetaData>
-                  <span>{item.date}</span>
-                  <span>{item.issuer}</span>
-                </MetaData>
+              return (
+                <Card key={item.id} $highlight={isHighlight}>
+                  <Header>
+                    <TypeBadge $bg={styles.bg} $color={styles.color}>{styles.label}</TypeBadge>
+                    <span style={{ fontSize: '1.2rem', opacity: 0.5 }}>
+                      {category === 'Paper' ? '📄' : category === 'Competition' ? '🏆' : '📜'}
+                    </span>
+                  </Header>
+                  <Title>{item.title}</Title>
+                  <MetaData>
+                    <span>{item.date}</span>
+                    <span>{item.issuer}</span>
+                  </MetaData>
 
-                {item.image_url && (
-                  <ViewButton onClick={() => setSelectedImage(item.image_url)}>
-                    &gt; view_proof.jpg
-                  </ViewButton>
-                )}
-              </Card>
-            );
-          })}
-        </Grid>
+                  {item.image_url && (
+                    <ViewButton onClick={() => setSelectedImage(item.image_url)}>
+                      &gt; view_proof.jpg
+                    </ViewButton>
+                  )}
+                </Card>
+              );
+            })}
+          </Grid>
+        )}
       </div>
 
       {selectedImage && (

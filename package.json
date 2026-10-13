@@ -29,6 +29,7 @@
     "start:functions": "netlify functions:serve --port 9999",
     "dev": "npm-run-all --parallel start start:functions",
     "build": "vite build",
+    "migrate": "node scripts/migrate_db.js",
     "test": "vitest run",
     "test:watch": "vitest"
   },

@@ -7,10 +7,16 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), ['REACT_APP_', 'NODE_ENV']);
 
   const processEnv = {};
+  const safeEnv = {};
   for (const key of Object.keys(env)) {
+    // Scrub database credentials from front-end bundle outputs
+    if (key.includes('DATABASE_URL')) {
+      continue;
+    }
+    safeEnv[key] = env[key];
     processEnv[`process.env.${key}`] = JSON.stringify(env[key]);
   }
-  processEnv['process.env'] = JSON.stringify(env);
+  processEnv['process.env'] = JSON.stringify(safeEnv);
 
   return {
     plugins: [
@@ -36,6 +42,11 @@ export default defineConfig(({ mode }) => {
     server: {
       port: 3000,
       proxy: {
+        '/api': {
+          target: 'http://localhost:9999',
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/api/, '/.netlify/functions'),
+        },
         '/.netlify/functions': {
           target: 'http://localhost:9999',
           changeOrigin: true,

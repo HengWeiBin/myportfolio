@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import styled from 'styled-components';
-import sql from '../../services/db';
+import { usePortfolio } from '../../context/ProfileContext';
 import { Skeleton } from '../Common/Loading';
 
 const Section = styled.section`
@@ -80,22 +80,7 @@ const Description = styled.p`
 `;
 
 const Experience = () => {
-  const [experiences, setExperiences] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchExperience = async () => {
-      try {
-        const data = await sql`SELECT * FROM experience ORDER BY id DESC`;
-        setExperiences(data);
-      } catch (e) {
-        console.error(e);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchExperience();
-  }, []);
+  const { experience: experiences = [], loading } = usePortfolio();
 
   if (loading) {
     return (
