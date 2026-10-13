@@ -1,575 +1,204 @@
-import React, { useState, useEffect } from 'react';
-import styled from 'styled-components';
+import React, { useState, useEffect, useCallback } from 'react';
 import { toast } from 'react-toastify';
 import {
-    getProjects, addProject, updateProject, deleteProject,
-    getCertificates, addCertificate, updateCertificate, deleteCertificate,
-    getExperience, addExperience, updateExperience, deleteExperience,
-    getProfile, updateProfile,
-    getSkills, addSkill, updateSkill, deleteSkill
+  getProjects, addProject, updateProject, deleteProject,
+  getCertificates, addCertificate, updateCertificate, deleteCertificate,
+  getExperience, addExperience, updateExperience, deleteExperience,
+  getProfile, updateProfile,
+  getSkills, addSkill, updateSkill, deleteSkill,
 } from '../../services/api';
 import { uploadImageToR2, deleteImageFromR2 } from '../../services/upload';
 import ConfirmModal from '../../components/Common/ConfirmModal';
-import { AdminTableSkeleton } from '../../components/Common/Loading';
+import ProjectsTab from './components/ProjectsTab';
+import ProjectModal from './components/ProjectModal';
+import CertificatesTab from './components/CertificatesTab';
+import CertificateModal from './components/CertificateModal';
+import ExperienceTab from './components/ExperienceTab';
+import ExperienceModal from './components/ExperienceModal';
+import SkillsTab from './components/SkillsTab';
+import SkillModal from './components/SkillModal';
+import ProfileTab from './components/ProfileTab';
 
-const Header = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 2rem;
-  border-bottom: 1px solid var(--border-color);
-  padding-bottom: 1rem;
-  
-  h1 {
-    font-size: 1.5rem;
-    color: var(--accent);
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    
-    &::before { content: '> '; color: var(--text-secondary); }
-    &::after { content: '_'; animation: blink 1s infinite; }
-  }
-  
-  @keyframes blink { 50% { opacity: 0; } }
-`;
-
-const TabContainer = styled.div`
-  display: flex;
-  gap: 2px;
-  margin-bottom: 2rem;
-  background: var(--border-color);
-  padding: 1px;
-  border-radius: 4px;
-  overflow: hidden;
-`;
-
-const Tab = styled.button`
-  background: ${props => props.$active ? 'var(--bg-dark)' : '#161b22'};
-  color: ${props => props.$active ? 'var(--accent)' : 'var(--text-secondary)'};
-  border: none;
-  padding: 12px 24px;
-  cursor: pointer;
-  font-family: var(--font-mono);
-  flex: 1;
-  transition: all 0.2s;
-  position: relative;
-  
-  &:hover {
-    background: var(--bg-dark);
-    color: var(--text-primary);
-  }
-  
-  ${props => props.$active && `
-    &::after {
-      content: '';
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      width: 100%;
-      height: 2px;
-      background: var(--accent);
-    }
-  `}
-`;
-
-const Section = styled.div`
-  margin-bottom: 4rem;
-  animation: fadeIn 0.3s ease;
-  
-  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-`;
-
-const Table = styled.table`
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  overflow: hidden;
-  
-  th, td {
-    padding: 15px;
-    text-align: left;
-    border-bottom: 1px solid var(--border-color);
-  }
-  
-  th {
-     background: rgba(255,255,255,0.03);
-     color: var(--accent);
-     font-weight: normal;
-     text-transform: uppercase;
-     font-size: 0.85rem;
-     letter-spacing: 1px;
-  }
-  
-  tr:last-child td {
-    border-bottom: none;
-  }
-  
-  tr:hover td {
-    background: rgba(255,255,255,0.02);
-  }
-`;
-
-const Button = styled.button`
-  background: ${props => props.$danger ? 'rgba(255, 85, 85, 0.1)' : 'rgba(139, 233, 253, 0.1)'};
-  color: ${props => props.$danger ? 'var(--danger)' : 'var(--accent)'};
-  border: 1px solid ${props => props.$danger ? 'var(--danger)' : 'var(--accent)'};
-  padding: 6px 14px;
-  cursor: pointer;
-  margin-right: 8px;
-  font-family: var(--font-mono);
-  font-size: 0.85rem;
-  border-radius: 4px;
-  transition: all 0.2s;
-  
-  &:hover {
-    background: ${props => props.$danger ? 'var(--danger)' : 'var(--accent)'};
-    color: ${props => props.$danger ? 'white' : 'var(--bg-dark)'};
-    box-shadow: 0 0 10px ${props => props.$danger ? 'rgba(255, 85, 85, 0.3)' : 'rgba(139, 233, 253, 0.3)'};
-  }
-`;
-
-
-const Modal = styled.div`
-  position: fixed;
-  top:0; left:0; right:0; bottom:0;
-  background: rgba(0,0,0,0.8);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 2000;
-  backdrop-filter: blur(5px);
-`;
-
-const ModalForm = styled.div`
-  background: #161b22;
-  padding: 2rem;
-  width: 600px;
-  border: 1px solid var(--accent);
-  max-height: 90vh;
-  overflow-y: auto;
-  box-shadow: 0 0 30px rgba(0,0,0,0.7);
-`;
-
-const Input = styled.input`
-  width: 100%;
-  padding: 12px;
-  margin-bottom: 15px;
-  background: #0d1117;
-  border: 1px solid #30363d;
-  color: #c9d1d9;
-  font-family: var(--font-mono);
-  
-  &:focus {
-      border-color: var(--accent);
-      outline: none;
-  }
-`;
-
-const TextArea = styled.textarea`
-  width: 100%;
-  padding: 12px;
-  margin-bottom: 15px;
-  background: #0d1117;
-  border: 1px solid #30363d;
-  color: #c9d1d9;
-  min-height: 150px;
-  font-family: var(--font-mono);
-  
-  &:focus {
-      border-color: var(--accent);
-      outline: none;
-  }
-`;
+const TABS = ['projects', 'certificates', 'experience', 'profile', 'skills'];
 
 const Dashboard = () => {
-    const [activeTab, setActiveTab] = useState('projects');
-    const [data, setData] = useState([]);
-    const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('projects');
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [profile, setProfile] = useState({});
+  const [showModal, setShowModal] = useState(false);
+  const [modalData, setModalData] = useState({});
+  const [isEdit, setIsEdit] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [confirmModal, setConfirmModal] = useState({ isOpen: false, id: null });
 
-    const [showModal, setShowModal] = useState(false);
-    const [modalData, setModalData] = useState({});
-    const [isEdit, setIsEdit] = useState(false);
-    
-    const [confirmModal, setConfirmModal] = useState({
-        isOpen: false,
-        title: '',
-        message: '',
-        onConfirm: () => {}
-    });
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      if (activeTab === 'projects') setData(await getProjects());
+      else if (activeTab === 'certificates') setData(await getCertificates());
+      else if (activeTab === 'experience') setData(await getExperience());
+      else if (activeTab === 'skills') setData(await getSkills());
+      else if (activeTab === 'profile') setProfile((await getProfile()) || {});
+    } catch (e) { toast.error('Failed to fetch data: ' + e.message); }
+    finally { setLoading(false); }
+  }, [activeTab]);
 
-    const [profile, setProfile] = useState({});
-    const [selectedFile, setSelectedFile] = useState(null);
-    const [uploading, setUploading] = useState(false);
+  useEffect(() => { fetchData(); }, [fetchData]);
 
-    const fetchData = React.useCallback(async () => {
-        setLoading(true);
-        let result = [];
-        try {
-            if (activeTab === 'projects') {
-                result = await getProjects();
-                setData(result);
-            } else if (activeTab === 'certificates') {
-                result = await getCertificates();
-                setData(result);
-            } else if (activeTab === 'experience') {
-                result = await getExperience();
-                setData(result);
-            } else if (activeTab === 'skills') {
-                result = await getSkills();
-                setData(result);
-            } else if (activeTab === 'profile') {
-                const p = await getProfile();
-                setProfile(p || {});
-            }
-        } catch (e) {
-            console.error("Fetch error", e);
-            toast.error("Failed to fetch data: " + e.message);
-        } finally {
-            setLoading(false);
-        }
-    }, [activeTab]);
+  const handleOpenAdd = () => { setIsEdit(false); setModalData({}); setShowModal(true); };
+  const handleOpenEdit = (item) => { setIsEdit(true); setModalData(item); setShowModal(true); };
 
+  const performDelete = async () => {
+    try {
+      const item = data.find((i) => i.id === confirmModal.id);
+      if (item?.image_url && (activeTab === 'projects' || activeTab === 'certificates')) {
+        try { await deleteImageFromR2(item.image_url); } catch (e) { console.warn(e); }
+      }
+      if (activeTab === 'projects') await deleteProject(confirmModal.id);
+      else if (activeTab === 'certificates') await deleteCertificate(confirmModal.id);
+      else if (activeTab === 'experience') await deleteExperience(confirmModal.id);
+      else if (activeTab === 'skills') await deleteSkill(confirmModal.id);
 
-    useEffect(() => {
-        fetchData();
-    }, [fetchData]);
+      toast.success('Item deleted successfully');
+      setConfirmModal({ isOpen: false, id: null });
+      fetchData();
+    } catch (e) { toast.error(e.message); }
+  };
 
-    const handleEdit = (item) => {
-        const formatted = { ...item };
-        if (typeof formatted.metrics === 'object' && formatted.metrics !== null) {
-            formatted.metrics = JSON.stringify(formatted.metrics, null, 2);
-        }
-        setModalData(formatted);
-        setIsEdit(true);
-        setShowModal(true);
-    };
+  const handleSave = async (formData) => {
+    try {
+      let dataToSave = { ...formData };
+      if (dataToSave.file) {
+        setUploading(true);
+        toast.info('Uploading image to R2...');
+        dataToSave.image_url = await uploadImageToR2(dataToSave.file, activeTab);
+        setUploading(false);
+      }
+      if (activeTab === 'projects') {
+        if (isEdit) await updateProject(dataToSave.id, dataToSave);
+        else await addProject({ ...dataToSave, tags: dataToSave.tags || [] });
+      } else if (activeTab === 'certificates') {
+        if (isEdit) await updateCertificate(dataToSave.id, dataToSave);
+        else await addCertificate(dataToSave);
+      } else if (activeTab === 'experience') {
+        if (isEdit) await updateExperience(dataToSave.id, dataToSave);
+        else await addExperience(dataToSave);
+      } else if (activeTab === 'skills') {
+        if (isEdit) await updateSkill(dataToSave.id, dataToSave);
+        else await addSkill(dataToSave);
+      }
+      setShowModal(false);
+      toast.success(`${isEdit ? 'Updated' : 'Added'} successfully`);
+      fetchData();
+    } catch (err) {
+      setUploading(false);
+      toast.error('Error saving: ' + err.message);
+    }
+  };
 
-    const handleDeleteClick = (id) => {
-        setConfirmModal({
-            isOpen: true,
-            title: 'Delete Item',
-            message: 'Are you sure you want to delete this item? This action cannot be undone.',
-            onConfirm: () => performDelete(id)
-        });
-    };
+  const handleUpdateItem = async (id, updatedItem) => {
+    try {
+      if (activeTab === 'projects') await updateProject(id, updatedItem);
+      else if (activeTab === 'certificates') await updateCertificate(id, updatedItem);
+      else if (activeTab === 'experience') await updateExperience(id, updatedItem);
+      toast.success('Updated successfully');
+      fetchData();
+    } catch (err) { toast.error('Failed to update: ' + err.message); }
+  };
 
-    const performDelete = async (id) => {
-        try {
-            const itemToDelete = data.find(item => item.id === id);
-            
-            if (itemToDelete?.image_url && (activeTab === 'projects' || activeTab === 'certificates')) {
-                try {
-                    await deleteImageFromR2(itemToDelete.image_url);
-                } catch (r2Error) {
-                    console.warn('Failed to delete image from R2:', r2Error);
-                }
-            }
-            
-            if (activeTab === 'projects') await deleteProject(id);
-            if (activeTab === 'certificates') await deleteCertificate(id);
-            if (activeTab === 'experience') await deleteExperience(id);
-            if (activeTab === 'skills') await deleteSkill(id);
-            
-            toast.success('Item deleted successfully');
-            setConfirmModal(prev => ({ ...prev, isOpen: false }));
-            fetchData();
-        } catch (e) {
-            toast.error(e.message);
-        }
-    };
+  const handleProfileSave = async (updated) => {
+    try {
+      await updateProfile(updated);
+      toast.success('Profile updated successfully!');
+      fetchData();
+    } catch (e) { toast.error(e.message); }
+  };
 
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center pb-4 border-b border-cyber-border">
+        <h1 className="text-xl font-mono font-bold text-cyan-electric uppercase tracking-widest flex items-center gap-2">
+          <span className="text-slate-400">&gt;</span>
+          <span>Control Panel</span>
+          <span className="inline-block w-2 h-4 bg-cyan-electric animate-pulse" />
+        </h1>
+      </div>
 
-    const handleFileChange = (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            setSelectedFile(file);
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setModalData({ ...modalData, image_preview: reader.result });
-            };
-            reader.readAsDataURL(file);
-        }
-    };
+      <div className="flex gap-1 p-1 bg-cyber-dark border border-cyber-border rounded-lg overflow-x-auto">
+        {TABS.map((tab) => (
+          <button
+            key={tab}
+            type="button"
+            onClick={() => setActiveTab(tab)}
+            className={`flex-1 min-w-[110px] py-2.5 px-4 font-mono text-xs font-semibold capitalize rounded transition-all cursor-pointer ${
+              activeTab === tab
+                ? 'bg-cyber-surface text-cyan-electric border border-cyan-electric/40 shadow-[0_0_12px_rgba(0,240,255,0.15)]'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
+            }`}
+          >
+            {tab}
+          </button>
+        ))}
+      </div>
 
-    const handleProfileSave = async (e) => {
-        e.preventDefault();
-        try {
-            await updateProfile(profile);
-            toast.success("Profile updated successfully!");
-        } catch (e) {
-            toast.error(e.message);
-        }
-    };
+      <div className="bg-cyber-card/40 border border-cyber-border rounded-lg p-5">
+        {activeTab === 'projects' && (
+          <ProjectsTab
+            data={data} loading={loading} onAdd={handleOpenAdd}
+            onEdit={handleOpenEdit} onDelete={(id) => setConfirmModal({ isOpen: true, id })}
+            onUpdateProject={handleUpdateItem}
+          />
+        )}
+        {activeTab === 'certificates' && (
+          <CertificatesTab
+            data={data} loading={loading} onAdd={handleOpenAdd}
+            onEdit={handleOpenEdit} onDelete={(id) => setConfirmModal({ isOpen: true, id })}
+            onUpdateCertificate={handleUpdateItem}
+          />
+        )}
+        {activeTab === 'experience' && (
+          <ExperienceTab
+            data={data} loading={loading} onAdd={handleOpenAdd}
+            onEdit={handleOpenEdit} onDelete={(id) => setConfirmModal({ isOpen: true, id })}
+            onUpdateExperience={handleUpdateItem}
+          />
+        )}
+        {activeTab === 'skills' && (
+          <SkillsTab
+            data={data} loading={loading} onAdd={handleOpenAdd}
+            onEdit={handleOpenEdit} onDelete={(id) => setConfirmModal({ isOpen: true, id })}
+          />
+        )}
+        {activeTab === 'profile' && (
+          <ProfileTab initialProfile={profile} onSaveProfile={handleProfileSave} />
+        )}
+      </div>
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        try {
-            let dataToSave = { ...modalData };
-            
-            if (selectedFile && (activeTab === 'projects' || activeTab === 'certificates')) {
-                setUploading(true);
-                toast.info('Uploading image to R2...');
-                try {
-                    const imageUrl = await uploadImageToR2(selectedFile, activeTab);
-                    dataToSave.image_url = imageUrl;
-                } catch (uploadErr) {
-                    toast.error('Image upload failed: ' + uploadErr.message);
-                    setUploading(false);
-                    return;
-                }
-                setUploading(false);
-            }
-            
-            if (activeTab === 'projects') {
-                if (typeof dataToSave.metrics === 'string' && dataToSave.metrics.trim()) {
-                    try {
-                        dataToSave.metrics = JSON.parse(dataToSave.metrics);
-                    } catch (e) {
-                        // Keep as raw or fallback
-                    }
-                }
-                dataToSave.is_confidential = Boolean(dataToSave.is_confidential);
-                if (dataToSave.sort_order !== undefined && dataToSave.sort_order !== '') {
-                    dataToSave.sort_order = Number(dataToSave.sort_order);
-                }
-                if (isEdit) await updateProject(dataToSave.id, dataToSave);
-                else await addProject({ ...dataToSave, tags: dataToSave.tags || [] });
-            } else if (activeTab === 'certificates') {
-                if (dataToSave.sort_order !== undefined && dataToSave.sort_order !== '') {
-                    dataToSave.sort_order = Number(dataToSave.sort_order);
-                }
-                if (isEdit) await updateCertificate(dataToSave.id, dataToSave);
-                else await addCertificate(dataToSave);
-            } else if (activeTab === 'experience') {
-                if (dataToSave.sort_order !== undefined && dataToSave.sort_order !== '') {
-                    dataToSave.sort_order = Number(dataToSave.sort_order);
-                }
-                if (isEdit) await updateExperience(dataToSave.id, dataToSave);
-                else await addExperience(dataToSave);
-            } else if (activeTab === 'skills') {
-                if (isEdit) await updateSkill(dataToSave.id, dataToSave);
-                else await addSkill(dataToSave);
-            }
-            setShowModal(false);
-            setModalData({});
-            setSelectedFile(null);
-            toast.success(`${isEdit ? 'Updated' : 'Added'} successfully`);
-            fetchData();
-        } catch (err) {
-            toast.error('Error saving: ' + err.message);
-        }
-    };
+      {showModal && activeTab === 'projects' && (
+        <ProjectModal isOpen isEdit={isEdit} initialData={modalData} onClose={() => setShowModal(false)} onSave={handleSave} uploading={uploading} />
+      )}
+      {showModal && activeTab === 'certificates' && (
+        <CertificateModal isOpen isEdit={isEdit} initialData={modalData} onClose={() => setShowModal(false)} onSave={handleSave} uploading={uploading} />
+      )}
+      {showModal && activeTab === 'experience' && (
+        <ExperienceModal isOpen isEdit={isEdit} initialData={modalData} onClose={() => setShowModal(false)} onSave={handleSave} />
+      )}
+      {showModal && activeTab === 'skills' && (
+        <SkillModal isOpen isEdit={isEdit} initialData={modalData} onClose={() => setShowModal(false)} onSave={handleSave} />
+      )}
 
-
-    const renderTable = () => {
-        if (activeTab === 'profile') return null;
-        
-        if (loading) return <AdminTableSkeleton />;
-        
-        if (data.length === 0) return (
-            <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)', border: '1px dashed var(--border-color)', borderRadius: '6px' }}>
-                No data found. Click "+ New Entry" to add some.
-            </div>
-        );
-
-        return (
-            <Table>
-                <thead>
-                    <tr>
-                        <th>{activeTab === 'skills' ? 'Name/Title' : 'Title/Role'}</th>
-                        <th>{activeTab === 'skills' ? 'Category' : 'Subtitle/Company'}</th>
-                        <th style={{ width: '150px', textAlign: 'right' }}>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {data.map(item => (
-                        <tr key={item.id}>
-                            <td>
-                                <div style={{ fontWeight: 'bold', color: 'var(--text-primary)' }}>{item.title || item.role || item.name}</div>
-                            </td>
-                            <td>
-                                <div style={{ color: 'var(--text-secondary)', fontSize: '0.9em' }}>
-                                    {item.company || item.issuer || item.date_end || item.date || item.category}
-                                </div>
-                            </td>
-                            <td style={{ textAlign: 'right' }}>
-                                <Button onClick={() => handleEdit(item)}>Edit</Button>
-                                <Button $danger onClick={() => handleDeleteClick(item.id)}>Delete</Button>
-                            </td>
-                        </tr>
-                    ))}
-                </tbody>
-            </Table>
-        );
-    };
-
-
-    const renderProfileForm = () => {
-        return (
-            <Section>
-                <h2>Edit User Configuration (Profile)</h2>
-                <form onSubmit={handleProfileSave} style={{ maxWidth: '600px' }}>
-                    <label>Admin Name</label>
-                    <Input value={profile.name || ''} onChange={e => setProfile({ ...profile, name: e.target.value })} />
-
-                    <label>Title</label>
-                    <Input value={profile.title || ''} onChange={e => setProfile({ ...profile, title: e.target.value })} />
-
-                    <label>Bio (About Me)</label>
-                    <TextArea value={profile.bio || ''} onChange={e => setProfile({ ...profile, bio: e.target.value })} />
-
-                    <label>Email</label>
-                    <Input value={profile.email || ''} onChange={e => setProfile({ ...profile, email: e.target.value })} />
-
-                    <label>Phone</label>
-                    <Input value={profile.phone || ''} onChange={e => setProfile({ ...profile, phone: e.target.value })} />
-
-                    <label>Resume Link (PDF URL)</label>
-                    <Input placeholder="https://example.com/resume.pdf" value={profile.resume_link || ''} onChange={e => setProfile({ ...profile, resume_link: e.target.value })} />
-
-                    <h3>Social Links</h3>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                        <Input placeholder="GitHub URL" value={profile.github || ''} onChange={e => setProfile({ ...profile, github: e.target.value })} />
-                        <Input placeholder="LinkedIn URL" value={profile.linkedin || ''} onChange={e => setProfile({ ...profile, linkedin: e.target.value })} />
-                        <Input placeholder="Instagram URL" value={profile.instagram || ''} onChange={e => setProfile({ ...profile, instagram: e.target.value })} />
-                        <Input placeholder="Facebook URL" value={profile.facebook || ''} onChange={e => setProfile({ ...profile, facebook: e.target.value })} />
-                    </div>
-
-                    <Button type="submit" style={{ marginTop: '20px', width: '100%', padding: '15px' }}>UPDATE SYSTEM PROFILE</Button>
-                </form>
-            </Section>
-        );
-    };
-
-    return (
-        <div>
-            <Header>
-                <h1>Control Panel</h1>
-            </Header>
-
-            <TabContainer>
-                <Tab $active={activeTab === 'projects'} onClick={() => setActiveTab('projects')}>Projects</Tab>
-                <Tab $active={activeTab === 'certificates'} onClick={() => setActiveTab('certificates')}>Certificates</Tab>
-                <Tab $active={activeTab === 'experience'} onClick={() => setActiveTab('experience')}>Experience</Tab>
-                <Tab $active={activeTab === 'profile'} onClick={() => setActiveTab('profile')}>Profile</Tab>
-                <Tab $active={activeTab === 'skills'} onClick={() => setActiveTab('skills')}>Skills</Tab>
-            </TabContainer>
-
-            {activeTab === 'profile' ? renderProfileForm() : (
-                <Section>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                        <h2 style={{ textTransform: 'capitalize' }}>{activeTab} Management</h2>
-                        <Button onClick={() => { setIsEdit(false); setModalData({}); setShowModal(true); }}>+ New Entry</Button>
-                    </div>
-                    {renderTable()}
-                </Section>
-            )}
-
-            {showModal && (
-                <Modal>
-                    <ModalForm>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', borderBottom: '1px solid var(--border-color)', paddingBottom: '10px' }}>
-                            <h3 style={{ margin: 0, color: 'var(--accent)' }}>{isEdit ? 'Edit' : 'Add'} {activeTab}</h3>
-                            <button onClick={() => setShowModal(false)} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '1.2rem' }}>&times;</button>
-                        </div>
-                        <form onSubmit={handleSubmit}>
-
-                            {/* Dynamic Form Fields */}
-
-                            {activeTab === 'projects' && (
-                                <>
-                                    <Input placeholder="Title" value={modalData.title || ''} onChange={e => setModalData({ ...modalData, title: e.target.value })} required />
-                                    <TextArea placeholder="Description (Markdown supported)" value={modalData.description || ''} onChange={e => setModalData({ ...modalData, description: e.target.value })} />
-                                    <Input placeholder="Link (URL)" value={modalData.link || ''} onChange={e => setModalData({ ...modalData, link: e.target.value })} />
-                                    <div style={{ display: 'flex', gap: '10px' }}>
-                                        <Input placeholder="Start Date" value={modalData.date_start || ''} onChange={e => setModalData({ ...modalData, date_start: e.target.value })} />
-                                        <Input placeholder="End Date" value={modalData.date_end || ''} onChange={e => setModalData({ ...modalData, date_end: e.target.value })} />
-                                    </div>
-                                    <div style={{ display: 'flex', gap: '10px' }}>
-                                        <Input placeholder="Tier (e.g. featured, standard, archive)" value={modalData.tier || ''} onChange={e => setModalData({ ...modalData, tier: e.target.value })} />
-                                        <Input type="number" placeholder="Sort Order (e.g. 0)" value={modalData.sort_order ?? ''} onChange={e => setModalData({ ...modalData, sort_order: e.target.value })} />
-                                    </div>
-                                    <div style={{ display: 'flex', gap: '10px' }}>
-                                        <Input placeholder="Visual Type (e.g. image, ResultViz, CodeBlock)" value={modalData.visual_type || ''} onChange={e => setModalData({ ...modalData, visual_type: e.target.value })} />
-                                        <Input placeholder="Repo Visibility (e.g. public, private)" value={modalData.repo_visibility || ''} onChange={e => setModalData({ ...modalData, repo_visibility: e.target.value })} />
-                                    </div>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '15px' }}>
-                                        <input 
-                                            type="checkbox" 
-                                            id="is_confidential" 
-                                            checked={Boolean(modalData.is_confidential)} 
-                                            onChange={e => setModalData({ ...modalData, is_confidential: e.target.checked })} 
-                                        />
-                                        <label htmlFor="is_confidential" style={{ color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '0.9rem' }}>
-                                            Confidential / NDA Case Study (Redacts link & metrics in public view)
-                                        </label>
-                                    </div>
-                                    <TextArea 
-                                        placeholder="Metrics JSON (e.g. { &quot;speedup&quot;: &quot;4x&quot;, &quot;accuracy&quot;: &quot;98.5%&quot; })" 
-                                        value={typeof modalData.metrics === 'object' && modalData.metrics !== null ? JSON.stringify(modalData.metrics, null, 2) : (modalData.metrics || '')} 
-                                        onChange={e => setModalData({ ...modalData, metrics: e.target.value })} 
-                                    />
-                                    <label>Project Image (Visual)</label>
-                                    <Input type="file" onChange={handleFileChange} />
-                                </>
-                            )}
-
-                            {activeTab === 'certificates' && (
-                                <>
-                                    <Input placeholder="Certificate Title" value={modalData.title || ''} onChange={e => setModalData({ ...modalData, title: e.target.value })} required />
-                                    <Input placeholder="Issuer" value={modalData.issuer || ''} onChange={e => setModalData({ ...modalData, issuer: e.target.value })} />
-                                    <Input placeholder="Date (YYYY-MM-DD)" value={modalData.date || ''} onChange={e => setModalData({ ...modalData, date: e.target.value })} />
-                                    <Input placeholder="Credential ID" value={modalData.credential_id || ''} onChange={e => setModalData({ ...modalData, credential_id: e.target.value })} />
-                                    <div style={{ display: 'flex', gap: '10px' }}>
-                                        <Input placeholder="Category (e.g. Certificate, Paper, Competition)" value={modalData.category || ''} onChange={e => setModalData({ ...modalData, category: e.target.value })} />
-                                        <Input placeholder="Tier (e.g. standard, featured)" value={modalData.tier || ''} onChange={e => setModalData({ ...modalData, tier: e.target.value })} />
-                                        <Input type="number" placeholder="Sort Order (e.g. 0)" value={modalData.sort_order ?? ''} onChange={e => setModalData({ ...modalData, sort_order: e.target.value })} />
-                                    </div>
-                                    <label>Certificate Image</label>
-                                    <Input type="file" onChange={handleFileChange} />
-                                </>
-                            )}
-
-                            {activeTab === 'experience' && (
-                                <>
-                                    <Input placeholder="Role / Position" value={modalData.role || ''} onChange={e => setModalData({ ...modalData, role: e.target.value })} required />
-                                    <Input placeholder="Company" value={modalData.company || ''} onChange={e => setModalData({ ...modalData, company: e.target.value })} />
-                                    <Input placeholder="Date Range (e.g. 2021 - Present)" value={modalData.date_range || ''} onChange={e => setModalData({ ...modalData, date_range: e.target.value })} />
-                                    <Input type="number" placeholder="Sort Order (e.g. 0)" value={modalData.sort_order ?? ''} onChange={e => setModalData({ ...modalData, sort_order: e.target.value })} />
-                                    <TextArea placeholder="Description" value={modalData.description || ''} onChange={e => setModalData({ ...modalData, description: e.target.value })} />
-                                </>
-                            )}
-
-
-                            {activeTab === 'skills' && (
-                                <>
-                                    <Input placeholder="Skill Name (e.g. PyTorch, Docker)" value={modalData.name || ''} onChange={e => setModalData({ ...modalData, name: e.target.value })} required />
-                                    <Input placeholder="Category (e.g. DL Frameworks, Core & Math)" value={modalData.category || ''} onChange={e => setModalData({ ...modalData, category: e.target.value })} required />
-                                </>
-                            )}
-
-                            <div style={{ marginTop: '20px', display: 'flex', gap: '10px', justifyContent: 'flex-end' }}>
-                                <Button type="button" $danger onClick={() => setShowModal(false)}>Cancel</Button>
-                                <Button type="submit" disabled={uploading}>{uploading ? 'Uploading...' : 'Save Changes'}</Button>
-                            </div>
-                        </form>
-                    </ModalForm>
-                </Modal>
-            )}
-            <ConfirmModal 
-                isOpen={confirmModal.isOpen}
-                title={confirmModal.title}
-                message={confirmModal.message}
-                onConfirm={confirmModal.onConfirm}
-                onCancel={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
-                confirmText="Delete"
-                cancelText="Cancel"
-            />
-        </div>
-    );
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        title="Delete Item"
+        message="Are you sure you want to delete this item? This action cannot be undone."
+        onConfirm={performDelete}
+        onCancel={() => setConfirmModal({ isOpen: false, id: null })}
+        confirmText="Delete"
+        cancelText="Cancel"
+      />
+    </div>
+  );
 };
-
 
 export default Dashboard;

@@ -96,4 +96,18 @@
 3. **Hardware-Aware & Motion-Sensitive Ambient Animation Lifecycle**:
    - Querying `prefers-reduced-motion` and `navigator.hardwareConcurrency` alongside `document.visibilitychange` and `IntersectionObserver` enables full suspension of `requestAnimationFrame` loops during background tab execution or off-screen scrolling, eliminating battery drain and maintaining 60 FPS performance on resource-constrained devices.
 
+## Ticket #8: Modular Admin Dashboard and NDA Case Study Management
+
+1. **Modular Sub-250-LOC Architecture with Specialized Tab & Modal Splitting**:
+   - Refactoring bloated single-file admin dashboards into dedicated domain modules (`ProjectsTab`, `ProjectModal`, `CertificatesTab`, `CertificateModal`, `ExperienceTab`, `ExperienceModal`, `SkillsTab`, `SkillModal`, `ProfileTab`) keeps each component strictly under 250 LOC and isolates complex modal state from table rendering logic.
+   - Extracting reusable form controls into `components/Shared/` (`FormInput`, `FormSelect`, `FormTextarea`, `StatusBadge`, `AdminButton`, `ImageDropzone`) unifies styling with Tailwind CSS v4 design tokens and prevents UI code duplication.
+
+2. **Split-Screen Live Markdown Rendering with Low-Latency Synchronization**:
+   - Pairing a cyber-styled textarea with a live `ReactMarkdown` preview pane enables instantaneous visual verification of formatting, headings, bullet lists, and code blocks before saving.
+   - Wrapping preview panes with Tailwind's `prose-invert` and dark palette classes ensures accurate styling fidelity that matches the public portfolio presentation.
+
+3. **Instant In-Row Mutation & Optimistic Refresh Flow**:
+   - Exposing instant tier dropdowns (`featured`, `standard`, `foundation`, `archive`) and sort order buttons (`▲` / `▼`) directly within table rows eliminates multi-step modal round-trips for routine administrative curation.
+   - Triggering background updates followed by immediate query refetches keeps admin state synchronized while displaying rapid feedback toasts.
+
 

@@ -8,6 +8,9 @@ const ADMIN_CREDENTIALS = {
 
 test.describe('Admin Panel', () => {
   let projectsList = [];
+  let certificatesList = [];
+  let experienceList = [];
+  let skillsList = [];
   let currentProfile = {
     name: 'Wayne Heng',
     title: 'Machine Learning Engineer',
@@ -95,10 +98,10 @@ test.describe('Admin Panel', () => {
         contentType: 'application/json',
         body: JSON.stringify({
           profile: currentProfile,
-          skills: [],
+          skills: skillsList,
           projects: projectsList,
-          experience: [],
-          certificates: []
+          experience: experienceList,
+          certificates: certificatesList
         })
       });
     });
@@ -265,6 +268,104 @@ test.describe('Admin Panel', () => {
       
       // Verify Toast
       await expect(page.getByText(/Profile updated successfully/i)).toBeVisible();
+    });
+
+    test('Split-screen Markdown editor live preview in Project Modal', async ({ page }) => {
+      await page.click('button:has-text("Projects")');
+      await page.click('button:has-text("+ New Entry")');
+      await expect(page.getByText('Add Projects')).toBeVisible();
+
+      // Type Markdown into textarea
+      const markdownInput = page.locator('textarea[placeholder="Description (Markdown supported)"]');
+      await markdownInput.fill('### Real-time Sensor Fusion\n- 60 FPS Tracking\n- Point cloud clustering');
+
+      // Verify live markdown preview renders heading and items
+      const previewPane = page.locator('.prose-invert');
+      await expect(previewPane.getByText('Real-time Sensor Fusion')).toBeVisible();
+      await expect(previewPane.getByText('60 FPS Tracking')).toBeVisible();
+
+      // Close modal
+      await page.click('button:has-text("Cancel")');
+      await expect(page.getByText('Add Projects')).not.toBeVisible();
+    });
+
+    test('NDA case study attributes, instant tier switching, and sorting on Projects', async ({ page }) => {
+      // Seed confidential NDA project
+      projectsList = [{
+        id: 101,
+        title: 'Autonomous Radar Perception',
+        description: 'Confidential radar fusion pipeline',
+        link: 'https://internal.corp/nda',
+        tier: 'featured',
+        sort_order: 1,
+        visual_type: 'ResultViz',
+        is_confidential: true,
+        repo_visibility: 'private',
+        metrics: { speedup: '4.2x', latency: '12ms' }
+      }];
+
+      await page.click('button:has-text("Certificates")');
+      await page.click('button:has-text("Projects")');
+      await expect(page.getByText('Autonomous Radar Perception')).toBeVisible();
+
+      // Verify NDA badge and repo visibility
+      await expect(page.getByText('NDA Protected')).toBeVisible();
+      await expect(page.getByText('private repo')).toBeVisible();
+
+      // Test instant tier switching via dropdown
+      const tierSelect = page.locator('select[aria-label="Tier for Autonomous Radar Perception"]');
+      await expect(tierSelect).toBeVisible();
+      projectsList[0].tier = 'foundation';
+      await tierSelect.selectOption('foundation');
+      await expect(page.getByText(/Updated successfully/i)).toBeVisible();
+
+      // Test sort order controls (Move Up / Down)
+      const moveUpBtn = page.locator('button[title="Move Up (Decrease sort_order)"]').first();
+      projectsList[0].sort_order = 0;
+      await moveUpBtn.click();
+      await expect(page.getByText(/Updated successfully/i)).toBeVisible();
+    });
+
+    test('Certificates tab with instant tier selector and sort controls', async ({ page }) => {
+      certificatesList = [{
+        id: 201,
+        title: 'Deep Learning Specialization',
+        issuer: 'DeepLearning.AI',
+        date: '2024-01-15',
+        credential_id: 'CERT-12345',
+        category: 'Certificate',
+        tier: 'standard',
+        sort_order: 0
+      }];
+
+      await page.click('button:has-text("Certificates")');
+      await expect(page.getByText('Certificates Management')).toBeVisible();
+      await expect(page.getByText('Deep Learning Specialization')).toBeVisible();
+
+      // Instant tier selector
+      const certTierSelect = page.locator('select[aria-label="Tier for Deep Learning Specialization"]');
+      certificatesList[0].tier = 'featured';
+      await certTierSelect.selectOption('featured');
+      await expect(page.getByText(/Updated successfully/i)).toBeVisible();
+
+      // Sort order down button
+      const moveDownBtn = page.locator('button[title="Move Down"]').first();
+      certificatesList[0].sort_order = 1;
+      await moveDownBtn.click();
+      await expect(page.getByText(/Updated successfully/i)).toBeVisible();
+    });
+
+    test('Skills tab displays categorized technical capabilities', async ({ page }) => {
+      skillsList = [{
+        id: 301,
+        name: 'PyTorch Lightning',
+        category: 'DL Frameworks'
+      }];
+
+      await page.click('button:has-text("Skills")');
+      await expect(page.getByText('Skills Management')).toBeVisible();
+      await expect(page.getByText('PyTorch Lightning')).toBeVisible();
+      await expect(page.getByText('DL Frameworks')).toBeVisible();
     });
   });
 });
