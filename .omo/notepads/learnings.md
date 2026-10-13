@@ -110,4 +110,18 @@
    - Exposing instant tier dropdowns (`featured`, `standard`, `foundation`, `archive`) and sort order buttons (`▲` / `▼`) directly within table rows eliminates multi-step modal round-trips for routine administrative curation.
    - Triggering background updates followed by immediate query refetches keeps admin state synchronized while displaying rapid feedback toasts.
 
+## Ticket #10: Mission Control Hero Terminal, Floating Dock, and UI Control
+
+1. **Cross-Platform Keyboard Shortcut Listeners & Viewport State Sync**:
+   - Supporting global `Cmd+K` (macOS) and `Ctrl+K` (Windows/Linux) requires checking `(e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k'` with `e.preventDefault()` to override native browser URL/search bar hijacking.
+   - Pairing viewport intersection tracking (`IntersectionObserver` on `#home`) with global key shortcuts allows the UI to seamlessly collapse between an embedded full-width hero terminal and a persistent floating bottom capsule dock without layout jumps or orphaned chat states.
+
+2. **Typewriter Streaming & Graceful Fallback Playback**:
+   - When LLM streaming quotas (5 requests/day) are exceeded or network connectivity drops, switching to curated token-by-token scripted playback (`getFallbackTrace`) preserves the perception of a live, intelligent assistant while completely masking backend errors.
+   - Splitting responses into word tokens with paced interval tickers (25-30ms) accurately replicates server-sent event token pacing and allows synchronous reasoning trace rendering alongside UI action dispatching.
+
+3. **Defensive DOM Operations in Headless and Synthetic Environments**:
+   - DOM methods like `Element.prototype.scrollIntoView` are absent in `jsdom` environments unless polyfilled or guarded.
+   - Using defensive optional calls (`typeof element?.scrollIntoView === 'function'`) and configuring a global mock in `setupTests.js` guarantees smooth execution across real browser engines (Playwright/Chromium) and headless unit runners (Vitest/jsdom) alike.
+
 

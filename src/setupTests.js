@@ -72,6 +72,11 @@ if (typeof window !== 'undefined' && !window.IntersectionObserver) {
   };
 }
 
+// Mock scrollIntoView in jsdom environment
+if (typeof window !== 'undefined' && typeof window.HTMLElement !== 'undefined') {
+  window.HTMLElement.prototype.scrollIntoView = vi.fn();
+}
+
 // Default mock for /api/portfolio in jsdom tests
 const defaultPortfolio = {
   profile: {

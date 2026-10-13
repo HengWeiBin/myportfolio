@@ -2,7 +2,9 @@ import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { GlobalStyles } from './styles/GlobalStyles';
 import { ProfileProvider } from './context/ProfileContext';
+import { AgentProvider } from './components/Agent/AgentContext';
 import { TerminalLayout } from './components/Layout/TerminalLayout';
+import FloatingDock from './components/Agent/FloatingDock';
 
 // 5-Section Narrative Layout
 import Hero from './components/Sections/Hero';
@@ -40,27 +42,30 @@ function HomePage() {
 function App() {
   return (
     <ProfileProvider>
-      <BrowserRouter>
-        <GlobalStyles />
-        <Routes>
-          {/* Public 5-Section Narrative Homepage */}
-          <Route
-            path="/"
-            element={
-              <TerminalLayout>
-                <HomePage />
-              </TerminalLayout>
-            }
-          />
+      <AgentProvider>
+        <BrowserRouter>
+          <GlobalStyles />
+          <Routes>
+            {/* Public 5-Section Narrative Homepage */}
+            <Route
+              path="/"
+              element={
+                <TerminalLayout>
+                  <HomePage />
+                </TerminalLayout>
+              }
+            />
 
-          {/* Dedicated Archive Route */}
-          <Route path="/archive" element={<Archive />} />
+            {/* Dedicated Archive Route */}
+            <Route path="/archive" element={<Archive />} />
 
-          {/* Admin Routes */}
-          <Route path="/admin/login" element={<Login />} />
-          <Route path="/admin/*" element={<AdminLayout />} />
-        </Routes>
-      </BrowserRouter>
+            {/* Admin Routes */}
+            <Route path="/admin/login" element={<Login />} />
+            <Route path="/admin/*" element={<AdminLayout />} />
+          </Routes>
+          <FloatingDock />
+        </BrowserRouter>
+      </AgentProvider>
     </ProfileProvider>
   );
 }

@@ -2,6 +2,7 @@ import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Link } from 'react-router-dom';
 import { usePortfolio } from '../../context/ProfileContext';
+import { useAgent } from '../Agent/AgentContext';
 import NeuralArch from '../Visualizations/NeuralArch';
 import CodeBlock from '../Visualizations/CodeBlock';
 import ResultViz from '../Visualizations/ResultViz';
@@ -15,6 +16,7 @@ const PROJECT_VISUALS = {
 
 const Projects = () => {
   const { projects = [], loading } = usePortfolio();
+  const { highlightedProject } = useAgent();
 
   // Highlight featured projects first, followed by others, excluding archived items if featured exist
   const featuredProjects = React.useMemo(() => {
@@ -116,14 +118,28 @@ const Projects = () => {
           <div className="space-y-12">
             {featuredProjects.map((project) => {
               const isFeaturedTier = (project.tier || '').toLowerCase() === 'featured';
+              const isHighlighted = Boolean(
+                highlightedProject &&
+                (
+                  (project.title && project.title.toLowerCase().includes(highlightedProject.toLowerCase())) ||
+                  (project.id && String(project.id) === String(highlightedProject))
+                )
+              );
 
               return (
                 <article
                   key={project.id || project.title}
-                  className={`flex flex-col md:flex-row bg-cyber-card/70 border rounded-xl overflow-hidden transition-all duration-300 hover:shadow-[0_0_30px_rgba(0,240,255,0.12)] ${
-                    isFeaturedTier
-                      ? 'border-cyan-500/40 hover:border-cyan-electric'
-                      : 'border-cyber-border hover:border-slate-500'
+                  id={`project-${project.title}`}
+                  data-project-id={project.id}
+                  data-project-title={project.title}
+                  data-testid={`project-card-${project.title}`}
+                  data-highlighted={isHighlighted ? 'true' : 'false'}
+                  className={`flex flex-col md:flex-row bg-cyber-card/70 border rounded-xl overflow-hidden transition-all duration-300 ${
+                    isHighlighted
+                      ? 'border-cyan-electric ring-2 ring-cyan-electric shadow-[0_0_35px_rgba(0,240,255,0.7)] scale-[1.01]'
+                      : isFeaturedTier
+                      ? 'border-cyan-500/40 hover:border-cyan-electric hover:shadow-[0_0_30px_rgba(0,240,255,0.12)]'
+                      : 'border-cyber-border hover:border-slate-500 hover:shadow-[0_0_30px_rgba(0,240,255,0.12)]'
                   }`}
                 >
                   {/* Left: Interactive Visual Simulation Area */}
