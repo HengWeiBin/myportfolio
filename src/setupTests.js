@@ -1,19 +1,65 @@
 import '@testing-library/jest-dom/vitest';
 import { vi } from 'vitest';
 
-// Mock canvas 2D context for jsdom environment (used by LatentSpace visualization)
+// Mock canvas 2D and WebGL context for jsdom environment (used by LatentGalaxy visualization)
 if (typeof HTMLCanvasElement !== 'undefined') {
-  HTMLCanvasElement.prototype.getContext = () => ({
-    clearRect: () => {},
-    fillRect: () => {},
-    beginPath: () => {},
-    arc: () => {},
-    fill: () => {},
-    stroke: () => {},
-    moveTo: () => {},
-    lineTo: () => {},
-    canvas: { width: 1024, height: 768 },
-  });
+  HTMLCanvasElement.prototype.getContext = function (type) {
+    if (type === '2d') {
+      return {
+        clearRect: () => {},
+        fillRect: () => {},
+        beginPath: () => {},
+        arc: () => {},
+        fill: () => {},
+        stroke: () => {},
+        moveTo: () => {},
+        lineTo: () => {},
+        createRadialGradient: () => ({
+          addColorStop: () => {},
+        }),
+        canvas: { width: 1024, height: 768 },
+      };
+    }
+    if (type === 'webgl' || type === 'webgl2' || type === 'experimental-webgl') {
+      return {
+        canvas: this,
+        getExtension: () => null,
+        getParameter: () => 16,
+        isContextLost: () => false,
+      };
+    }
+    return null;
+  };
+}
+
+// Mock Three.js WebGLRenderer in jsdom environment to prevent headless GL driver exceptions
+vi.mock('three', async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    ...actual,
+    WebGLRenderer: vi.fn().mockImplementation(() => ({
+      render: vi.fn(),
+      setSize: vi.fn(),
+      setPixelRatio: vi.fn(),
+      dispose: vi.fn(),
+      forceContextLoss: vi.fn(),
+      domElement: typeof document !== 'undefined' ? document.createElement('canvas') : {},
+    })),
+  };
+});
+
+// Mock matchMedia in jsdom environment
+if (typeof window !== 'undefined' && !window.matchMedia) {
+  window.matchMedia = vi.fn().mockImplementation((query) => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    dispatchEvent: vi.fn(),
+  }));
 }
 
 // Mock IntersectionObserver in jsdom environment

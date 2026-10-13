@@ -1,7 +1,10 @@
 import React, { useEffect } from 'react';
 import { useProfile } from '../../context/ProfileContext';
-import LatentSpace from '../Background/LatentSpace';
+import { VisualSyncProvider } from '../../context/VisualSyncContext';
+import FallbackPoster from '../Background/FallbackPoster';
 import Navbar from './Navbar';
+
+const LatentGalaxy = React.lazy(() => import('../Background/LatentGalaxy'));
 
 const Footer = () => {
   const { profile } = useProfile();
@@ -73,14 +76,19 @@ export const TerminalLayout = ({ children }) => {
   }, [profile]);
 
   return (
-    <div className="flex flex-col min-h-screen bg-cyber-bg text-slate-100 font-sans selection:bg-cyan-500/20 selection:text-cyan-300 relative">
-      <LatentSpace />
-      <Navbar />
-      <main className="flex-1 w-full" id="main-content">
-        {children}
-      </main>
-      <Footer />
-    </div>
+    <VisualSyncProvider>
+      <div className="flex flex-col min-h-screen bg-cyber-bg text-slate-100 font-sans selection:bg-cyan-500/20 selection:text-cyan-300 relative">
+        <FallbackPoster />
+        <React.Suspense fallback={null}>
+          <LatentGalaxy />
+        </React.Suspense>
+        <Navbar />
+        <main className="flex-1 w-full" id="main-content">
+          {children}
+        </main>
+        <Footer />
+      </div>
+    </VisualSyncProvider>
   );
 };
 

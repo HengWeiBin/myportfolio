@@ -115,4 +115,23 @@
 4. **Responsive Mobile Navigation Drawer**:
    - Created standalone `src/components/Layout/Navbar.js` with smooth anchor scrolling across all 5 sections, `/archive` route switching, active section tracking, system status badge, and an accessible mobile drawer overlay.
 
+## Ticket #7: Ambient WebGL Galaxy with Capabilities Sync
+
+1. **Pure Three.js Canvas Architecture with React 19 Compatibility**:
+   - Selected pure Three.js over `@react-three/fiber` to ensure seamless React 19 compatibility without experimental reconciler flags or peer dependency breakages.
+   - Encapsulated Three.js scene creation, buffer geometries, particle sprite glow texture generation, and memory disposal directly inside `src/components/Background/LatentGalaxy.js`.
+
+2. **Synchronous FallbackPoster Layering with Code-Split WebGL**:
+   - Built lightweight `src/components/Background/FallbackPoster.js` rendering pure CSS gradient meshes and SVG celestial grid patterns synchronously in `TerminalLayout`.
+   - Dynamically imported `LatentGalaxy` via `React.lazy` and `React.Suspense`, code-splitting the ~530kB 3D bundle into a deferred chunk (`LatentGalaxy-*.js`) with zero initial paint layout shift (CLS: 0).
+
+3. **Decoupled Visual State Synchronization (`VisualSyncContext`)**:
+   - Provisioned `src/context/VisualSyncContext.js` exposing `useVisualSync()` with `highlightSkill` and `clearHighlight`.
+   - Updated `src/components/Sections/Skills.js` to dispatch hover events on skill chips.
+   - Connected `LatentGalaxy` to dynamically highlight semantic particle clusters and render glowing quadratic bezier splines (`THREE.QuadraticBezierCurve3`) connecting hovered skills to related project nodes.
+
+4. **Resource-Conserving Animation Suspension & Accessibility Safeguards**:
+   - Configured lifecycle suspension hooks: pauses `requestAnimationFrame` on `document.hidden` and viewport exit (`IntersectionObserver`).
+   - Automatically respects `prefers-reduced-motion: reduce`, low hardware concurrency (`navigator.hardwareConcurrency <= 1`), and headless/unsupported WebGL environments by falling back to static poster rendering without battery drain.
+
 

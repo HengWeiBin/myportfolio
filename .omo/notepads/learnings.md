@@ -85,4 +85,15 @@
 3. **Defensive Browser API Integration in Test Environments (`IntersectionObserver`)**:
    - When building scroll-spying navigation bars with `IntersectionObserver`, jsdom test environments throw `ReferenceError: IntersectionObserver is not defined` unless guarded or polyfilled. Guarding with `if (typeof window === 'undefined' || !window.IntersectionObserver) return;` in component hooks and registering a mock class in `setupTests.js` ensures rock-solid execution across both browser runtimes and headless Vitest suites.
 
+## Ticket #7: Ambient WebGL Galaxy with Capabilities Sync
+
+1. **Asynchronous WebGL Code-Splitting Behind a Synchronous CSS Fallback Poster**:
+   - Bundling 3D graphics libraries like Three.js adds significant weight (~530kB minified). Loading the WebGL canvas asynchronously via `React.lazy` and `Suspense` behind a zero-layout-shift synchronous `FallbackPoster` guarantees rapid First Contentful Paint (FCP) and 0 Cumulative Layout Shift (CLS), while Rollup/Vite cleanly isolates Three.js into a standalone chunk.
+
+2. **Headless WebGL Mocking in Vitest/jsdom Environment**:
+   - In jsdom, Three.js `WebGLRenderer` queries shader precision formats, capabilities, and texture parameters on the canvas GL context (`gl.getShaderPrecisionFormat`, `gl.VERSION`, `gl.createTexture`). Selectively mocking `THREE.WebGLRenderer` in `setupTests.js` preserves full access to Three.js math, vectors, and geometry classes while allowing unit tests to exercise React component lifecycles, canvas mounts, and resource disposal without headless GPU driver crashes.
+
+3. **Hardware-Aware & Motion-Sensitive Ambient Animation Lifecycle**:
+   - Querying `prefers-reduced-motion` and `navigator.hardwareConcurrency` alongside `document.visibilitychange` and `IntersectionObserver` enables full suspension of `requestAnimationFrame` loops during background tab execution or off-screen scrolling, eliminating battery drain and maintaining 60 FPS performance on resource-constrained devices.
+
 
