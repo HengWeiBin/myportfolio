@@ -94,3 +94,25 @@
    - Quota exhaustion returns structured SSE event: `event: error\ndata: {"code":"RATE_LIMIT_EXCEEDED","message":"Daily rate limit reached. Reverting to scripted playback."}\n\n`.
    - Built-in guardrails defend against off-topic inquiries, prompt injection attempts, and NDA disclosure requests by redirecting visitors to portfolio inquiries or direct communication.
 
+## Ticket #6: Mission Control Design Tokens, 5-Section Layout, and Archive Route
+
+1. **Mission Control Cyber Aesthetic Design Tokens with Tailwind CSS v4 `@theme`**:
+   - Configured custom dark shades (`--color-cyber-bg: #07090e`, `--color-cyber-dark: #0a0d14`, `--color-cyber-card: #0f1422`, `--color-cyber-surface: #131a29`, `--color-cyber-panel: #172033`, `--color-cyber-border: #1e293b`), electric cyan (`#00f0ff`), and neon purple (`#a855f7`) gradients in `src/index.css`.
+   - Built reusable glassmorphism utility classes (`.glass-panel`, `.glass-panel-glow`, `.glass-card`) with subtle 1px border glows and backdrop filters.
+
+2. **5-Section Narrative Architecture**:
+   - Structured the homepage into a cohesive 5-act narrative:
+     1. `Hero`: Mission Control header, terminal window bar, system status indicator, bio, action CTAs (`$ view_projects.sh`, `$ cat resume.txt`, `$ initiate_handshake.sh`), and real-time training animation.
+     2. `Featured Work` (`#projects`): Highlights `featured` tier projects, NDA safeguards (`🔒 [NDA Protected]`), metric chips, and visualization sandboxes.
+     3. `System Evolution` (`#experience`): Chronological career and ML research timeline with glowing nodes and rich markdown descriptions.
+     4. `Technical Arsenal` (`#skills`): Categorized capabilities grid with tech stack badges.
+     5. `Credentials & Handshake` (`#certificates` & `#contact`): Peer recognition badges, proof modal previews, direct contact channels, and transmission end indicator.
+
+3. **Dedicated Archive Route (`/archive`)**:
+   - Created `src/pages/Archive.js` mounted at `/archive` with live client-side keyword search (title, tags, technologies, issuer, description), type filters (`All`, `Projects`, `Credentials`), and tier filters (`All Tiers`, `Featured`, `Standard`, `Foundation`).
+   - Integrated full credential proof preview modals and NDA badges for archived items.
+
+4. **Responsive Mobile Navigation Drawer**:
+   - Created standalone `src/components/Layout/Navbar.js` with smooth anchor scrolling across all 5 sections, `/archive` route switching, active section tracking, system status badge, and an accessible mobile drawer overlay.
+
+

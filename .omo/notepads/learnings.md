@@ -74,3 +74,15 @@
    - Netlify Function handlers can deliver streaming responses using standard SSE protocol formatting (`Content-Type: text/event-stream; charset=utf-8` with frames `event: <type>\ndata: <json>\n\n`).
    - Emitting typed SSE events (`event: tool_call`, `event: token`, `event: done`, `event: error`) allows client EventSource / fetch streams to dynamically render tool execution traces, word-by-word streaming typography, and structured rate limit exhaustion notifications.
 
+## Ticket #6: Mission Control Design Tokens, 5-Section Layout, and Archive Route
+
+1. **Tailwind CSS v4 `@theme` Architecture & PostCSS Toolchain**:
+   - Tailwind CSS v4 eliminates `tailwind.config.js` in favor of declarative `@theme` blocks directly in CSS (`src/index.css`), driven by `@tailwindcss/postcss`. Defining design tokens (`--color-cyber-bg`, `--color-cyan-electric`, `--color-purple-neon`, `--font-mono`, `--font-sans`) within `@theme` injects custom utility classes (such as `bg-cyber-bg`, `text-cyan-electric`, `border-cyan-electric`) natively into Vite's PostCSS pipeline without extra plugins.
+
+2. **Decoupling `styled-components` from Public SPA Bundles**:
+   - Migrating all public presentation layers (`Hero`, `Projects`, `Experience`, `Skills`, `Certificates`, `Contact`, `TerminalLayout`, `Navbar`, and visualizations) to pure Tailwind utility classes completely removes runtime CSS-in-JS compilation overhead and emotion/styled DOM tagging from public visitor paths, significantly boosting render performance and lighthouse scores while preserving styled-components in `/admin` without breakage.
+
+3. **Defensive Browser API Integration in Test Environments (`IntersectionObserver`)**:
+   - When building scroll-spying navigation bars with `IntersectionObserver`, jsdom test environments throw `ReferenceError: IntersectionObserver is not defined` unless guarded or polyfilled. Guarding with `if (typeof window === 'undefined' || !window.IntersectionObserver) return;` in component hooks and registering a mock class in `setupTests.js` ensures rock-solid execution across both browser runtimes and headless Vitest suites.
+
+

@@ -1,96 +1,6 @@
 import React from 'react';
-import styled from 'styled-components';
 import TrainingLog from '../Hero/TrainingLog';
 import { useProfile } from '../../context/ProfileContext';
-
-const HeroSection = styled.section`
-  min-height: 80vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  position: relative;
-`;
-
-const TerminalWindow = styled.div`
-  width: 100%;
-  max-width: 800px;
-  background: rgba(10, 12, 16, 0.8);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-  overflow: hidden;
-`;
-
-const TerminalHeader = styled.div`
-  background: #1f2229;
-  padding: 10px 15px;
-  display: flex;
-  gap: 8px;
-  border-bottom: 1px solid #333;
-`;
-
-const Dot = styled.div`
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background-color: ${props => props.color};
-`;
-
-const TerminalBody = styled.div`
-  padding: 40px;
-  font-family: var(--font-mono);
-  
-  @media (max-width: 576px) {
-    padding: 20px;
-  }
-`;
-
-// Greeting component removed as it was unused
-
-const Title = styled.h1`
-  font-size: 3.5rem;
-  font-weight: 700;
-  margin-bottom: 0.5rem;
-  line-height: 1.2;
-  
-  @media (max-width: 768px) {
-    font-size: 2.5rem;
-  }
-`;
-
-const Subtitle = styled.h2`
-  font-size: 1.5rem;
-  font-weight: 300;
-  color: var(--text-secondary);
-  margin-bottom: 2rem;
-  
-  @media (max-width: 768px) {
-    font-size: 1.2rem;
-  }
-`;
-
-const CommandInput = styled.div`
-  display: flex;
-  gap: 15px;
-  margin-top: 3rem;
-  flex-wrap: wrap;
-`;
-
-const Button = styled.button`
-  background: transparent;
-  border: 1px solid ${props => props.$primary ? 'var(--accent)' : 'var(--border-color)'};
-  color: ${props => props.$primary ? 'var(--accent)' : 'var(--text-secondary)'};
-  padding: 10px 20px;
-  font-family: var(--font-mono);
-  font-size: 1rem;
-  cursor: pointer;
-  transition: all 0.2s;
-  
-  &:hover {
-    background: ${props => props.$primary ? 'var(--accent-glow)' : 'rgba(255,255,255,0.05)'};
-    transform: translateY(-2px);
-  }
-`;
 
 const Hero = () => {
   const { profile } = useProfile();
@@ -98,36 +8,99 @@ const Hero = () => {
   const title = profile?.title || "Machine Learning Engineer \n& AI Researcher.";
   const subtitle = profile?.bio || "Translating data into intelligence. Specializing in LLMs, Computer Vision, and scalable MLOps pipelines.";
 
+  const scrollToSection = (e, id) => {
+    e.preventDefault();
+    const el = document.getElementById(id);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   return (
-    <HeroSection id="home">
-      <div className="container">
-        <TerminalWindow>
-          <TerminalHeader>
-            <Dot color="#ff5555" />
-            <Dot color="#ffb86c" />
-            <Dot color="#50fa7b" />
-            <span style={{ color: '#8b949e', fontSize: '0.8rem', marginLeft: 'auto', fontFamily: 'monospace' }}>bash -- 80x24</span>
-          </TerminalHeader>
-          <TerminalBody>
+    <section id="home" className="min-h-[85vh] flex items-center justify-center relative py-12 px-4 sm:px-6 lg:px-8">
+      <div className="w-full max-w-4xl mx-auto">
+        {/* Terminal Window Frame */}
+        <div className="glass-panel-glow rounded-xl overflow-hidden shadow-2xl border border-cyber-border-bright transition-all">
+          {/* Terminal Window Header Bar */}
+          <header className="bg-cyber-surface/90 px-4 py-3 border-b border-cyber-border flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="w-3 h-3 rounded-full bg-rose-500/90 inline-block" />
+              <span className="w-3 h-3 rounded-full bg-amber-500/90 inline-block" />
+              <span className="w-3 h-3 rounded-full bg-emerald-500/90 inline-block" />
+              <span className="text-xs font-mono text-slate-400 ml-2 hidden sm:inline">
+                mission-control@node-01:~/workspace
+              </span>
+            </div>
+
+            <div className="flex items-center gap-3 font-mono text-xs text-slate-400">
+              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                STATUS: READY
+              </span>
+              <span className="hidden md:inline text-slate-500">bash -- 80x24</span>
+            </div>
+          </header>
+
+          {/* Terminal Window Content Body */}
+          <div className="p-6 sm:p-10 font-mono">
+            {/* Interactive Simulated ML Training Stream */}
             <TrainingLog />
 
-            <div style={{ marginTop: '2rem' }}>
-              <Title dangerouslySetInnerHTML={{ __html: title.replace(/\n/g, '<br/>') }} />
-              <Subtitle>{subtitle}</Subtitle>
+            <div className="mt-8 space-y-4">
+              <div className="inline-block text-xs font-mono tracking-wider text-cyan-electric bg-cyan-electric/10 px-3 py-1 rounded border border-cyan-electric/30">
+                &gt; FOCUS: DEEP LEARNING // COMPUTER VISION // DISTRIBUTED MLOPS
+              </div>
 
-              <CommandInput>
-                <a href="#projects" onClick={(e) => { e.preventDefault(); document.getElementById('projects').scrollIntoView({ behavior: 'smooth' }) }}>
-                  <Button $primary>$ view_projects.sh</Button>
+              {/* Title with Cyberpunk Gradient */}
+              <h1 className="text-3xl sm:text-5xl lg:text-6xl font-bold font-mono tracking-tight text-slate-100 leading-tight">
+                {title.split('\n').map((line, idx) => (
+                  <span key={idx} className="block">
+                    {idx === 0 ? (
+                      line
+                    ) : (
+                      <span className="text-gradient-cyber">{line}</span>
+                    )}
+                  </span>
+                ))}
+              </h1>
+
+              {/* Bio / Subtitle */}
+              <p className="text-base sm:text-lg font-sans text-slate-400 max-w-2xl leading-relaxed pt-2">
+                {subtitle}
+              </p>
+
+              {/* Mission Control Action CTAs */}
+              <div className="flex flex-wrap gap-4 pt-6">
+                <a
+                  href="#projects"
+                  onClick={(e) => scrollToSection(e, 'projects')}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded font-mono text-sm font-semibold bg-cyan-electric/15 text-cyan-electric border border-cyan-electric/50 hover:bg-cyan-electric/25 hover:shadow-[0_0_20px_rgba(0,240,255,0.3)] transition-all focus:outline-none focus:ring-2 focus:ring-cyan-400"
+                >
+                  $ view_projects.sh
                 </a>
-                <a href={profile?.resume_link || "/104.pdf"} target="_blank" rel="noreferrer">
-                  <Button>$ cat resume.txt</Button>
+
+                <a
+                  href={profile?.resume_link || "/104.pdf"}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded font-mono text-sm font-medium bg-slate-800/60 text-slate-300 border border-cyber-border hover:text-white hover:border-slate-500 hover:bg-slate-800 transition-all focus:outline-none focus:ring-2 focus:ring-purple-400"
+                >
+                  $ cat resume.txt
                 </a>
-              </CommandInput>
+
+                <a
+                  href="#contact"
+                  onClick={(e) => scrollToSection(e, 'contact')}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded font-mono text-sm font-medium bg-purple-500/10 text-purple-300 border border-purple-500/30 hover:bg-purple-500/20 hover:text-purple-200 transition-all focus:outline-none focus:ring-2 focus:ring-purple-400"
+                >
+                  $ initiate_handshake.sh
+                </a>
+              </div>
             </div>
-          </TerminalBody>
-        </TerminalWindow>
+          </div>
+        </div>
       </div>
-    </HeroSection>
+    </section>
   );
 };
 
