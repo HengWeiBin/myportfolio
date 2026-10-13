@@ -1,6 +1,22 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { fetchPortfolioData, getProjects, getCertificates, getSkills, getExperience, getProfile } from './api';
+import jwt from 'jsonwebtoken';
+import { 
+  fetchPortfolioData, 
+  getProjects, 
+  getTieredProjects, 
+  getCertificates, 
+  getSkills, 
+  getExperience, 
+  getProfile,
+  addProject,
+  updateProject,
+  addCertificate,
+  updateCertificate,
+  addExperience,
+  updateExperience
+} from './api';
 import portfolioHandler from '../../netlify/functions/portfolio';
+import adminCrudHandler from '../../netlify/functions/admin-crud';
 
 // Test mock fixtures
 const mockProfile = {
@@ -32,7 +48,29 @@ const mockProjects = [
     date_start: '2023-01',
     date_end: '2023-08',
     image_url: 'https://pub-r2.dev/projects/sample.jpg',
-    tags: ['PyTorch', 'ROS2']
+    tags: ['PyTorch', 'ROS2'],
+    tier: 'featured',
+    sort_order: 1,
+    visual_type: 'ResultViz',
+    is_confidential: false,
+    repo_visibility: 'public',
+    metrics: { accuracy: '98.2%' }
+  },
+  {
+    id: 2,
+    title: 'Confidential Fintech Fraud Classifier',
+    description: 'Proprietary enterprise fraud detection',
+    link: 'https://github.com/client-internal/private-repo',
+    date_start: '2023-09',
+    date_end: '2024-02',
+    image_url: 'https://pub-r2.dev/projects/confidential.jpg',
+    tags: ['XGBoost', 'Kafka'],
+    tier: 'standard',
+    sort_order: 2,
+    visual_type: 'image',
+    is_confidential: true,
+    repo_visibility: 'private',
+    metrics: { fraud_loss_reduction: '$12M', precision: '99.1%' }
   }
 ];
 
@@ -43,7 +81,8 @@ const mockExperience = [
     company: 'Neural Robotics Corp',
     date_range: '2022 - Present',
     description: 'Architecting multimodal vision perception systems.',
-    tech_stack: ['PyTorch', 'CUDA', 'Python']
+    tech_stack: ['PyTorch', 'CUDA', 'Python'],
+    sort_order: 1
   }
 ];
 
@@ -54,7 +93,21 @@ const mockCertificates = [
     issuer: 'DeepLearning.AI',
     date: '2022-05',
     image_url: 'https://pub-r2.dev/certificates/sample.jpg',
-    credential_id: 'CERT-12345'
+    credential_id: 'CERT-12345',
+    category: 'Certificate',
+    tier: 'featured',
+    sort_order: 1
+  },
+  {
+    id: 2,
+    title: 'NeurIPS Workshop Best Paper',
+    issuer: 'NeurIPS',
+    date: '2023-12',
+    image_url: 'https://pub-r2.dev/certificates/paper.jpg',
+    credential_id: 'PAPER-6789',
+    category: 'Paper',
+    tier: 'standard',
+    sort_order: 2
   }
 ];
 
@@ -77,7 +130,9 @@ describe('Netlify Function: GET /api/portfolio', () => {
     portfolioHandler.__setSql(createMockSql());
     process.env = {
       ...originalEnv,
-      DATABASE_URL: 'postgresql://testuser:secretpassword@ep-test-123.neon.tech/neondb?sslmode=require'
+      DATABASE_URL: 'postgresql://testuser:secretpassword@ep-test-123.neon.tech/neondb?sslmode=require',
+      ADMIN_API_KEY: 'test-admin-secret-key',
+      JWT_SECRET: 'test-jwt-secret-key'
     };
   });
 
@@ -100,7 +155,7 @@ describe('Netlify Function: GET /api/portfolio', () => {
     expect(body.error).toBe('Method not allowed');
   });
 
-  it('returns aggregated portfolio payload with expected structure on GET', async () => {
+  it('returns aggregated portfolio payload with expected structure and tiering on GET', async () => {
     const res = await portfolioHandler.handler({ httpMethod: 'GET' });
     expect(res.statusCode).toBe(200);
     expect(res.headers['Content-Type']).toBe('application/json');
@@ -111,19 +166,90 @@ describe('Netlify Function: GET /api/portfolio', () => {
     expect(data).toHaveProperty('projects');
     expect(data).toHaveProperty('experience');
     expect(data).toHaveProperty('certificates');
+    expect(data).toHaveProperty('tiered_projects');
+    expect(data).toHaveProperty('tiered');
 
     expect(data.profile.name).toBe('Alex Chen');
     expect(data.skills).toHaveLength(3);
-    expect(data.projects).toHaveLength(1);
+    expect(data.projects).toHaveLength(2);
     expect(data.experience).toHaveLength(1);
+    expect(data.certificates).toHaveLength(2);
+
+    // Verify structured tier mapping
+    expect(data.tiered_projects).toHaveProperty('featured');
+    expect(data.tiered_projects).toHaveProperty('standard');
+    expect(data.tiered.projects.featured[0].title).toBe('CenterFusionDetect3D');
+  });
+
+  it('filters portfolio output by tier when query parameter is specified', async () => {
+    const res = await portfolioHandler.handler({ 
+      httpMethod: 'GET',
+      queryStringParameters: { tier: 'featured' }
+    });
+    expect(res.statusCode).toBe(200);
+    const data = JSON.parse(res.body);
+
+    expect(data.projects).toHaveLength(1);
+    expect(data.projects[0].tier).toBe('featured');
+    expect(data.projects[0].title).toBe('CenterFusionDetect3D');
+
     expect(data.certificates).toHaveLength(1);
+    expect(data.certificates[0].tier).toBe('featured');
+  });
+
+  it('redacts confidential project links and metrics for public unauthenticated visitors', async () => {
+    const res = await portfolioHandler.handler({ httpMethod: 'GET' });
+    const data = JSON.parse(res.body);
+
+    const publicProject = data.projects.find(p => p.id === 1);
+    const confidentialProject = data.projects.find(p => p.id === 2);
+
+    expect(publicProject.is_confidential).toBe(false);
+    expect(publicProject.link).toBe('https://github.com/demo/fusion');
+    expect(publicProject.metrics).toEqual({ accuracy: '98.2%' });
+
+    // Confidential project must be redacted
+    expect(confidentialProject.is_confidential).toBe(true);
+    expect(confidentialProject.link).toBeNull();
+    expect(confidentialProject.metrics).toEqual({});
+  });
+
+  it('preserves confidential links and metrics when accessed with valid admin cookie session', async () => {
+    const adminToken = jwt.sign({ id: 1, email: 'admin@test.com' }, 'test-jwt-secret-key');
+    const res = await portfolioHandler.handler({ 
+      httpMethod: 'GET',
+      headers: {
+        cookie: `admin_jwt=${adminToken}`
+      }
+    });
+    expect(res.statusCode).toBe(200);
+    const data = JSON.parse(res.body);
+
+    const confidentialProject = data.projects.find(p => p.id === 2);
+    expect(confidentialProject.is_confidential).toBe(true);
+    expect(confidentialProject.link).toBe('https://github.com/client-internal/private-repo');
+    expect(confidentialProject.metrics).toEqual({ fraud_loss_reduction: '$12M', precision: '99.1%' });
+  });
+
+  it('preserves confidential links and metrics when accessed with valid x-admin-key header', async () => {
+    const res = await portfolioHandler.handler({ 
+      httpMethod: 'GET',
+      headers: {
+        'x-admin-key': 'test-admin-secret-key'
+      }
+    });
+    expect(res.statusCode).toBe(200);
+    const data = JSON.parse(res.body);
+
+    const confidentialProject = data.projects.find(p => p.id === 2);
+    expect(confidentialProject.link).toBe('https://github.com/client-internal/private-repo');
+    expect(confidentialProject.metrics).toHaveProperty('fraud_loss_reduction');
   });
 
   it('ensures sensitive credentials and password hashes are never leaked', async () => {
     const res = await portfolioHandler.handler({ httpMethod: 'GET' });
     const responseText = res.body;
 
-    // Database connection secrets must never appear in response body
     expect(responseText).not.toContain('secretpassword');
     expect(responseText).not.toContain('postgresql://');
     expect(responseText).not.toContain('neon.tech');
@@ -138,7 +264,6 @@ describe('Netlify Function: GET /api/portfolio', () => {
 
     const body = JSON.parse(res.body);
     expect(body.error).toBe('Failed to fetch portfolio data');
-    // Ensure sensitive details from the error are omitted
     expect(res.body).not.toContain('ep-test-123.neon.tech');
     expect(res.body).not.toContain('port 5432');
   });
@@ -156,7 +281,114 @@ describe('Netlify Function: GET /api/portfolio', () => {
   });
 });
 
-describe('Frontend API Service: /api/portfolio consumption', () => {
+describe('Netlify Function: POST /api/admin/crud', () => {
+  const originalEnv = process.env;
+  let mockSqlFn;
+
+  beforeEach(() => {
+    mockSqlFn = vi.fn().mockResolvedValue([{ id: 10 }]);
+    adminCrudHandler.__setSql(mockSqlFn);
+    process.env = {
+      ...originalEnv,
+      DATABASE_URL: 'postgresql://testuser:secretpassword@ep-test-123.neon.tech/neondb?sslmode=require',
+      ADMIN_API_KEY: 'test-admin-secret-key',
+      JWT_SECRET: 'test-jwt-secret-key'
+    };
+  });
+
+  afterEach(() => {
+    adminCrudHandler.__setSql(null);
+    process.env = originalEnv;
+  });
+
+  it('rejects unauthenticated requests with 401 Unauthorized', async () => {
+    const res = await adminCrudHandler.handler({
+      httpMethod: 'POST',
+      body: JSON.stringify({ action: 'createProject', data: { title: 'Test' } })
+    });
+    expect(res.statusCode).toBe(401);
+    const body = JSON.parse(res.body);
+    expect(body.error).toContain('Unauthorized');
+  });
+
+  it('allows authenticated admin via x-admin-key to create project with tiered and NDA fields', async () => {
+    const projectData = {
+      title: 'Autonomous Navigation System',
+      description: 'Lidar SLAM and navigation pipeline',
+      link: 'https://example.com/slam',
+      tier: 'featured',
+      sort_order: 1,
+      visual_type: 'ResultViz',
+      is_confidential: true,
+      repo_visibility: 'private',
+      metrics: { latency: '15ms', accuracy: '99%' }
+    };
+
+    const res = await adminCrudHandler.handler({
+      httpMethod: 'POST',
+      headers: {
+        'x-admin-key': 'test-admin-secret-key'
+      },
+      body: JSON.stringify({
+        action: 'createProject',
+        data: projectData
+      })
+    });
+
+    expect(res.statusCode).toBe(200);
+    const body = JSON.parse(res.body);
+    expect(body.success).toBe(true);
+    expect(mockSqlFn).toHaveBeenCalled();
+  });
+
+  it('allows authenticated admin via JWT cookie to update certificate with category and tier', async () => {
+    const adminToken = jwt.sign({ id: 1, email: 'admin@test.com' }, 'test-jwt-secret-key');
+    const certData = {
+      title: 'CVPR Best Paper',
+      issuer: 'CVPR',
+      date: '2024-06',
+      category: 'Paper',
+      tier: 'featured',
+      sort_order: 0
+    };
+
+    const res = await adminCrudHandler.handler({
+      httpMethod: 'POST',
+      headers: {
+        cookie: `admin_jwt=${adminToken}`
+      },
+      body: JSON.stringify({
+        action: 'updateCertificate',
+        id: 5,
+        data: certData
+      })
+    });
+
+    expect(res.statusCode).toBe(200);
+    const body = JSON.parse(res.body);
+    expect(body.success).toBe(true);
+    expect(mockSqlFn).toHaveBeenCalled();
+  });
+
+  it('allows authenticated admin to delete experience entry', async () => {
+    const res = await adminCrudHandler.handler({
+      httpMethod: 'POST',
+      headers: {
+        'x-admin-key': 'test-admin-secret-key'
+      },
+      body: JSON.stringify({
+        action: 'deleteExperience',
+        id: 3
+      })
+    });
+
+    expect(res.statusCode).toBe(200);
+    const body = JSON.parse(res.body);
+    expect(body.success).toBe(true);
+  });
+});
+
+describe('Frontend API Service: /api/portfolio consumption & CRUD', () => {
   const originalFetch = global.fetch;
 
   beforeEach(() => {
@@ -167,13 +399,14 @@ describe('Frontend API Service: /api/portfolio consumption', () => {
     global.fetch = originalFetch;
   });
 
-  it('fetchPortfolioData calls /api/portfolio and returns JSON', async () => {
+  it('fetchPortfolioData calls /api/portfolio and passes tier filter query parameter', async () => {
     const mockPayload = {
       profile: mockProfile,
       skills: mockSkills,
       projects: mockProjects,
       experience: mockExperience,
-      certificates: mockCertificates
+      certificates: mockCertificates,
+      tiered_projects: { featured: [mockProjects[0]] }
     };
 
     global.fetch.mockResolvedValueOnce({
@@ -182,20 +415,30 @@ describe('Frontend API Service: /api/portfolio consumption', () => {
       json: async () => mockPayload
     });
 
-    const data = await fetchPortfolioData();
-    expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining('/api/portfolio'));
+    const data = await fetchPortfolioData({ tier: 'featured' });
+    expect(global.fetch).toHaveBeenCalledWith(expect.stringContaining('/api/portfolio?tier=featured'));
     expect(data.profile.name).toBe('Alex Chen');
-    expect(data.projects[0].title).toBe('CenterFusionDetect3D');
   });
 
-  it('fetchPortfolioData throws error on non-OK response status', async () => {
+  it('getTieredProjects returns tiered grouping from portfolio data', async () => {
+    const mockPayload = {
+      projects: mockProjects,
+      tiered_projects: {
+        featured: [mockProjects[0]],
+        standard: [mockProjects[1]]
+      }
+    };
+
     global.fetch.mockResolvedValueOnce({
-      ok: false,
-      status: 500,
-      statusText: 'Internal Server Error'
+      ok: true,
+      status: 200,
+      json: async () => mockPayload
     });
 
-    await expect(fetchPortfolioData()).rejects.toThrow('Failed to fetch portfolio data: 500 Internal Server Error');
+    const tiered = await getTieredProjects();
+    expect(tiered).toHaveProperty('featured');
+    expect(tiered).toHaveProperty('standard');
+    expect(tiered.featured[0].title).toBe('CenterFusionDetect3D');
   });
 
   it('getProjects, getSkills, getExperience, getCertificates, getProfile consume portfolio data', async () => {
@@ -230,16 +473,20 @@ describe('Frontend API Service: /api/portfolio consumption', () => {
 });
 
 describe('Database Migration Runner', () => {
-  it('initializes schema_migrations table and executes pending migrations', async () => {
+  it('initializes schema_migrations table and executes all migrations including 005', async () => {
     const { migrate, MIGRATIONS } = await import('../../scripts/migrate_db');
 
     expect(Array.isArray(MIGRATIONS)).toBe(true);
-    expect(MIGRATIONS.length).toBeGreaterThanOrEqual(2);
+    expect(MIGRATIONS.length).toBeGreaterThanOrEqual(5);
+
+    // Verify migration 005 exists in migration list
+    const migration005 = MIGRATIONS.find(m => m.name === '005_tiered_content_and_nda_metadata');
+    expect(migration005).toBeDefined();
 
     const executedQueries = [];
     const mockClient = {
       query: vi.fn(async (queryText, params) => {
-        executedQueries.push(typeof queryText === 'string' ? queryText : queryText.text);
+        executedQueries.push(typeof queryText === 'string' ? queryText : queryText?.text || '');
         if (typeof queryText === 'string' && queryText.includes('SELECT name FROM schema_migrations')) {
           return { rows: [] }; // No migrations applied yet
         }
@@ -263,9 +510,49 @@ describe('Database Migration Runner', () => {
 
     expect(result.applied).toContain('001_create_core_tables');
     expect(result.applied).toContain('002_add_resume_and_image_urls');
+    expect(result.applied).toContain('005_tiered_content_and_nda_metadata');
 
     // Ensure schema_migrations table creation was executed
     const hasSchemaMigrationsCreation = executedQueries.some(q => q.includes('CREATE TABLE IF NOT EXISTS schema_migrations'));
     expect(hasSchemaMigrationsCreation).toBe(true);
+  });
+
+  it('guarantees idempotency when run a second time against an already-migrated database', async () => {
+    const { migrate, MIGRATIONS } = await import('../../scripts/migrate_db');
+
+    // Simulate database where all migrations are already recorded
+    const mockClient = {
+      query: vi.fn(async (queryText) => {
+        if (typeof queryText === 'string' && queryText.includes('SELECT name FROM schema_migrations')) {
+          return { rows: MIGRATIONS.map(m => ({ name: m.name })) };
+        }
+        return { rows: [] };
+      }),
+      release: vi.fn()
+    };
+
+    const mockPool = {
+      connect: vi.fn().mockResolvedValue(mockClient),
+      end: vi.fn()
+    };
+
+    const result = await migrate(mockPool);
+
+    // No new migrations should be applied
+    expect(result.applied).toHaveLength(0);
+    // All migrations should be skipped
+    expect(result.skipped).toContain('005_tiered_content_and_nda_metadata');
+  });
+
+  it('loadSqlMigrations parses and returns sql migration files from migrations directory', async () => {
+    const { loadSqlMigrations } = await import('../../scripts/migrate_db');
+    const sqlMigrations = loadSqlMigrations();
+
+    expect(Array.isArray(sqlMigrations)).toBe(true);
+    expect(sqlMigrations.length).toBeGreaterThanOrEqual(1);
+
+    const m005 = sqlMigrations.find(m => m.name === '005_tiered_content_and_nda_metadata');
+    expect(m005).toBeDefined();
+    expect(typeof m005.up).toBe('function');
   });
 });

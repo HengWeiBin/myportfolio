@@ -168,10 +168,69 @@ const MIGRATIONS = [
         }
       }
     }
+  },
+  {
+    name: '005_tiered_content_and_nda_metadata',
+    up: async (client) => {
+      const sqlPath = path.join(__dirname, '../migrations/005_tiered_content_and_nda_metadata.sql');
+      let sqlContent;
+      if (fs.existsSync(sqlPath)) {
+        sqlContent = fs.readFileSync(sqlPath, 'utf8');
+      } else {
+        sqlContent = `
+          ALTER TABLE projects 
+          ADD COLUMN IF NOT EXISTS tier TEXT DEFAULT 'standard',
+          ADD COLUMN IF NOT EXISTS sort_order INTEGER DEFAULT 0,
+          ADD COLUMN IF NOT EXISTS visual_type TEXT DEFAULT 'image',
+          ADD COLUMN IF NOT EXISTS is_confidential BOOLEAN DEFAULT FALSE,
+          ADD COLUMN IF NOT EXISTS repo_visibility TEXT DEFAULT 'public',
+          ADD COLUMN IF NOT EXISTS metrics JSONB DEFAULT '{}'::jsonb;
+
+          UPDATE projects SET tier = 'standard' WHERE tier IS NULL;
+          UPDATE projects SET sort_order = 0 WHERE sort_order IS NULL;
+          UPDATE projects SET visual_type = 'image' WHERE visual_type IS NULL;
+          UPDATE projects SET is_confidential = FALSE WHERE is_confidential IS NULL;
+          UPDATE projects SET repo_visibility = 'public' WHERE repo_visibility IS NULL;
+          UPDATE projects SET metrics = '{}'::jsonb WHERE metrics IS NULL;
+
+          ALTER TABLE certificates 
+          ADD COLUMN IF NOT EXISTS category TEXT DEFAULT 'Certificate',
+          ADD COLUMN IF NOT EXISTS tier TEXT DEFAULT 'standard',
+          ADD COLUMN IF NOT EXISTS sort_order INTEGER DEFAULT 0;
+
+          UPDATE certificates SET category = 'Certificate' WHERE category IS NULL;
+          UPDATE certificates SET tier = 'standard' WHERE tier IS NULL;
+          UPDATE certificates SET sort_order = 0 WHERE sort_order IS NULL;
+
+          ALTER TABLE experience 
+          ADD COLUMN IF NOT EXISTS sort_order INTEGER DEFAULT 0;
+
+          UPDATE experience SET sort_order = 0 WHERE sort_order IS NULL;
+        `;
+      }
+      await client.query(sqlContent);
+    }
   }
 ];
 
-async function migrate(customPool) {
+function loadSqlMigrations(dirPath = path.join(__dirname, '../migrations')) {
+  if (!fs.existsSync(dirPath)) return [];
+  const files = fs.readdirSync(dirPath).filter(f => f.endsWith('.sql')).sort();
+  return files.map(file => {
+    const name = file.replace(/\.sql$/, '');
+    return {
+      name,
+      file,
+      up: async (client) => {
+        const content = fs.readFileSync(path.join(dirPath, file), 'utf8');
+        await client.query(content);
+      }
+    };
+  });
+}
+
+
+async function migrate(customPool, options = {}) {
   const pool = customPool || getPool();
   if (!pool) {
     console.warn('[migrate] No database connection string provided. Skipping migration.');
@@ -195,7 +254,14 @@ async function migrate(customPool) {
     const existingMigrations = await client.query('SELECT name FROM schema_migrations');
     const appliedNames = new Set(existingMigrations.rows.map(r => r.name));
 
-    for (const migration of MIGRATIONS) {
+    // Combine base MIGRATIONS and any additional SQL migrations in migrationsDir
+    const migrationsDir = options.migrationsDir || path.join(__dirname, '../migrations');
+    const sqlMigrations = loadSqlMigrations(migrationsDir);
+    const existingNames = new Set(MIGRATIONS.map(m => m.name));
+    const extraSqlMigrations = sqlMigrations.filter(m => !existingNames.has(m.name));
+    const migrationsToRun = options.migrations || [...MIGRATIONS, ...extraSqlMigrations];
+
+    for (const migration of migrationsToRun) {
       if (appliedNames.has(migration.name)) {
         console.log(`[migrate] Migration "${migration.name}" already applied. Skipping.`);
         skipped.push(migration.name);
@@ -239,4 +305,6 @@ if (require.main === module) {
 module.exports = {
   migrate,
   MIGRATIONS,
+  loadSqlMigrations,
 };
+

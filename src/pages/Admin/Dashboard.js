@@ -237,7 +237,11 @@ const Dashboard = () => {
     }, [fetchData]);
 
     const handleEdit = (item) => {
-        setModalData(item);
+        const formatted = { ...item };
+        if (typeof formatted.metrics === 'object' && formatted.metrics !== null) {
+            formatted.metrics = JSON.stringify(formatted.metrics, null, 2);
+        }
+        setModalData(formatted);
         setIsEdit(true);
         setShowModal(true);
     };
@@ -319,12 +323,29 @@ const Dashboard = () => {
             }
             
             if (activeTab === 'projects') {
+                if (typeof dataToSave.metrics === 'string' && dataToSave.metrics.trim()) {
+                    try {
+                        dataToSave.metrics = JSON.parse(dataToSave.metrics);
+                    } catch (e) {
+                        // Keep as raw or fallback
+                    }
+                }
+                dataToSave.is_confidential = Boolean(dataToSave.is_confidential);
+                if (dataToSave.sort_order !== undefined && dataToSave.sort_order !== '') {
+                    dataToSave.sort_order = Number(dataToSave.sort_order);
+                }
                 if (isEdit) await updateProject(dataToSave.id, dataToSave);
-                else await addProject({ ...dataToSave, tags: [] });
+                else await addProject({ ...dataToSave, tags: dataToSave.tags || [] });
             } else if (activeTab === 'certificates') {
+                if (dataToSave.sort_order !== undefined && dataToSave.sort_order !== '') {
+                    dataToSave.sort_order = Number(dataToSave.sort_order);
+                }
                 if (isEdit) await updateCertificate(dataToSave.id, dataToSave);
                 else await addCertificate(dataToSave);
             } else if (activeTab === 'experience') {
+                if (dataToSave.sort_order !== undefined && dataToSave.sort_order !== '') {
+                    dataToSave.sort_order = Number(dataToSave.sort_order);
+                }
                 if (isEdit) await updateExperience(dataToSave.id, dataToSave);
                 else await addExperience(dataToSave);
             } else if (activeTab === 'skills') {
@@ -466,6 +487,30 @@ const Dashboard = () => {
                                         <Input placeholder="Start Date" value={modalData.date_start || ''} onChange={e => setModalData({ ...modalData, date_start: e.target.value })} />
                                         <Input placeholder="End Date" value={modalData.date_end || ''} onChange={e => setModalData({ ...modalData, date_end: e.target.value })} />
                                     </div>
+                                    <div style={{ display: 'flex', gap: '10px' }}>
+                                        <Input placeholder="Tier (e.g. featured, standard, archive)" value={modalData.tier || ''} onChange={e => setModalData({ ...modalData, tier: e.target.value })} />
+                                        <Input type="number" placeholder="Sort Order (e.g. 0)" value={modalData.sort_order ?? ''} onChange={e => setModalData({ ...modalData, sort_order: e.target.value })} />
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '10px' }}>
+                                        <Input placeholder="Visual Type (e.g. image, ResultViz, CodeBlock)" value={modalData.visual_type || ''} onChange={e => setModalData({ ...modalData, visual_type: e.target.value })} />
+                                        <Input placeholder="Repo Visibility (e.g. public, private)" value={modalData.repo_visibility || ''} onChange={e => setModalData({ ...modalData, repo_visibility: e.target.value })} />
+                                    </div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '15px' }}>
+                                        <input 
+                                            type="checkbox" 
+                                            id="is_confidential" 
+                                            checked={Boolean(modalData.is_confidential)} 
+                                            onChange={e => setModalData({ ...modalData, is_confidential: e.target.checked })} 
+                                        />
+                                        <label htmlFor="is_confidential" style={{ color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '0.9rem' }}>
+                                            Confidential / NDA Case Study (Redacts link & metrics in public view)
+                                        </label>
+                                    </div>
+                                    <TextArea 
+                                        placeholder="Metrics JSON (e.g. { &quot;speedup&quot;: &quot;4x&quot;, &quot;accuracy&quot;: &quot;98.5%&quot; })" 
+                                        value={typeof modalData.metrics === 'object' && modalData.metrics !== null ? JSON.stringify(modalData.metrics, null, 2) : (modalData.metrics || '')} 
+                                        onChange={e => setModalData({ ...modalData, metrics: e.target.value })} 
+                                    />
                                     <label>Project Image (Visual)</label>
                                     <Input type="file" onChange={handleFileChange} />
                                 </>
@@ -477,6 +522,11 @@ const Dashboard = () => {
                                     <Input placeholder="Issuer" value={modalData.issuer || ''} onChange={e => setModalData({ ...modalData, issuer: e.target.value })} />
                                     <Input placeholder="Date (YYYY-MM-DD)" value={modalData.date || ''} onChange={e => setModalData({ ...modalData, date: e.target.value })} />
                                     <Input placeholder="Credential ID" value={modalData.credential_id || ''} onChange={e => setModalData({ ...modalData, credential_id: e.target.value })} />
+                                    <div style={{ display: 'flex', gap: '10px' }}>
+                                        <Input placeholder="Category (e.g. Certificate, Paper, Competition)" value={modalData.category || ''} onChange={e => setModalData({ ...modalData, category: e.target.value })} />
+                                        <Input placeholder="Tier (e.g. standard, featured)" value={modalData.tier || ''} onChange={e => setModalData({ ...modalData, tier: e.target.value })} />
+                                        <Input type="number" placeholder="Sort Order (e.g. 0)" value={modalData.sort_order ?? ''} onChange={e => setModalData({ ...modalData, sort_order: e.target.value })} />
+                                    </div>
                                     <label>Certificate Image</label>
                                     <Input type="file" onChange={handleFileChange} />
                                 </>
@@ -487,9 +537,11 @@ const Dashboard = () => {
                                     <Input placeholder="Role / Position" value={modalData.role || ''} onChange={e => setModalData({ ...modalData, role: e.target.value })} required />
                                     <Input placeholder="Company" value={modalData.company || ''} onChange={e => setModalData({ ...modalData, company: e.target.value })} />
                                     <Input placeholder="Date Range (e.g. 2021 - Present)" value={modalData.date_range || ''} onChange={e => setModalData({ ...modalData, date_range: e.target.value })} />
+                                    <Input type="number" placeholder="Sort Order (e.g. 0)" value={modalData.sort_order ?? ''} onChange={e => setModalData({ ...modalData, sort_order: e.target.value })} />
                                     <TextArea placeholder="Description" value={modalData.description || ''} onChange={e => setModalData({ ...modalData, description: e.target.value })} />
                                 </>
                             )}
+
 
                             {activeTab === 'skills' && (
                                 <>

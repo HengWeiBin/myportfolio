@@ -277,8 +277,10 @@ const Projects = () => {
   const { projects, loading } = usePortfolio();
 
   const renderVisual = (project) => {
-    // 1. Check if there's a mapped visual type
-    const visualType = PROJECT_VISUALS[project.title] || PROJECT_VISUALS[Object.keys(PROJECT_VISUALS).find(k => project.title?.includes(k))];
+    // 1. Check if there's a mapped visual type (direct attribute or title lookup)
+    const visualType = project.visual_type && project.visual_type !== 'image'
+      ? project.visual_type
+      : (PROJECT_VISUALS[project.title] || PROJECT_VISUALS[Object.keys(PROJECT_VISUALS).find(k => project.title?.includes(k))]);
 
     if (visualType === 'NeuralArch') return <NeuralArch />;
     if (visualType === 'CodeBlock') return <CodeBlock code={`# Core Algorithm\ndef fuse_sensors(radar, camera):\n    """\n    Fuse radar point clouds with\n    camera image features.\n    """\n    return kalman_filter(radar, camera)`} />;
@@ -324,11 +326,34 @@ const Projects = () => {
                 <TechStack>
                   [{project.date_start} - {project.date_end}]
                 </TechStack>
+                {project.metrics && typeof project.metrics === 'object' && Object.keys(project.metrics).length > 0 && (
+                  <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '1rem' }}>
+                    {Object.entries(project.metrics).map(([key, val]) => (
+                      <span key={key} style={{
+                        fontFamily: 'var(--font-mono)',
+                        fontSize: '0.75rem',
+                        padding: '2px 8px',
+                        borderRadius: '3px',
+                        background: 'rgba(88, 166, 255, 0.1)',
+                        border: '1px solid rgba(88, 166, 255, 0.3)',
+                        color: 'var(--accent)'
+                      }}>
+                        {key}: {String(val)}
+                      </span>
+                    ))}
+                  </div>
+                )}
                 <Description>
                   <ReactMarkdown>{project.description}</ReactMarkdown>
                 </Description>
                 <Links>
-                  <LinkBtn href={project.link} target="_blank">[View Source / Demo]</LinkBtn>
+                  {project.is_confidential ? (
+                    <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', fontFamily: 'var(--font-mono)' }}>
+                      🔒 [NDA Protected / Client Confidential]
+                    </span>
+                  ) : (
+                    project.link && <LinkBtn href={project.link} target="_blank">[View Source / Demo]</LinkBtn>
+                  )}
                 </Links>
               </ContentArea>
             </ProjectCard>
