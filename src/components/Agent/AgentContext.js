@@ -32,7 +32,22 @@ export const AgentProvider = ({ children }) => {
   const [rateLimitReached, setRateLimitReached] = useState(false);
   const [rateLimitNotice, setRateLimitNotice] = useState(null);
 
-  const playbackTimerRef = useRef(null);
+  const activeTimerRef = useRef(null);
+  const playbackTimerRef = activeTimerRef;
+  const isMountedRef = useRef(true);
+
+  // Clean up streaming timers on unmount
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => {
+      isMountedRef.current = false;
+      if (activeTimerRef.current) {
+        clearTimeout(activeTimerRef.current);
+        clearInterval(activeTimerRef.current);
+        activeTimerRef.current = null;
+      }
+    };
+  }, []);
 
   // Client actions hook
   const { scrollTo, highlightProject, filterSkills, executeAction } = useClientActions({
@@ -90,11 +105,22 @@ export const AgentProvider = ({ children }) => {
     const words = (trace.response || '').split(' ');
     let currentIndex = 0;
 
-    if (playbackTimerRef.current) {
-      clearInterval(playbackTimerRef.current);
+    if (activeTimerRef.current) {
+      clearTimeout(activeTimerRef.current);
+      clearInterval(activeTimerRef.current);
+      activeTimerRef.current = null;
     }
 
-    playbackTimerRef.current = setInterval(() => {
+    activeTimerRef.current = setInterval(() => {
+      if (typeof window === 'undefined' || !isMountedRef.current) {
+        if (activeTimerRef.current) {
+          clearTimeout(activeTimerRef.current);
+          clearInterval(activeTimerRef.current);
+          activeTimerRef.current = null;
+        }
+        return;
+      }
+
       if (currentIndex < words.length) {
         const nextChunk = (currentIndex === 0 ? '' : ' ') + words[currentIndex];
         setMessages(prev => prev.map(msg => {
@@ -108,8 +134,12 @@ export const AgentProvider = ({ children }) => {
         }));
         currentIndex++;
       } else {
-        clearInterval(playbackTimerRef.current);
-        playbackTimerRef.current = null;
+        if (activeTimerRef.current) {
+          clearTimeout(activeTimerRef.current);
+          clearInterval(activeTimerRef.current);
+          activeTimerRef.current = null;
+        }
+        if (typeof window === 'undefined' || !isMountedRef.current) return;
         setMessages(prev => prev.map(msg => {
           if (msg.id === assistantId) {
             return { ...msg, isStreaming: false };
@@ -286,9 +316,10 @@ export const AgentProvider = ({ children }) => {
   }, [isStreaming, rateLimitReached, runScriptedPlayback, executeAction]);
 
   const resetChat = useCallback(() => {
-    if (playbackTimerRef.current) {
-      clearInterval(playbackTimerRef.current);
-      playbackTimerRef.current = null;
+    if (activeTimerRef.current) {
+      clearTimeout(activeTimerRef.current);
+      clearInterval(activeTimerRef.current);
+      activeTimerRef.current = null;
     }
     setMessages([INITIAL_MESSAGE]);
     setIsStreaming(false);

@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, screen, fireEvent, act } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { getFallbackTrace, FALLBACK_TRACES } from './fallbackTraces';
 import { useClientActions } from './useClientActions';
 import { AgentProvider, useAgent } from './AgentContext';
@@ -17,6 +17,10 @@ vi.mock('framer-motion', () => ({
   },
   AnimatePresence: ({ children }) => <>{children}</>,
 }));
+
+afterEach(() => {
+  vi.clearAllTimers();
+});
 
 describe('Fallback Traces & Bilingual Grounding', () => {
   it('correctly maps English project query to projects_en trace', () => {
