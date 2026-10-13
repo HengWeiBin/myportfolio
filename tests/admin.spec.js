@@ -17,8 +17,55 @@ test.describe('Admin Panel', () => {
     bio: 'Initial bio',
     email: ADMIN_CREDENTIALS.email
   };
+  let activeLlmConfig = {
+    id: 1,
+    provider: 'gemini',
+    model: 'gemini-1.5-flash',
+    model_name: 'gemini-1.5-flash',
+    base_url: '',
+    api_key_masked: '••••8492',
+    system_prompt: 'You are an AI portfolio assistant for the software and machine learning engineer.',
+    daily_rate_limit: 5,
+    is_active: true
+  };
+  let conversationsList = [
+    {
+      id: 'conv-101',
+      session_id: 'sess-alpha-77',
+      ip_hash: '1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d',
+      prompt: 'Explain the 3D LiDAR and Radar perception models',
+      response: 'Wayne designed CenterFusionDetect3D integrating millimeter-wave radar point clouds.',
+      tool_trace: [{ tool: 'list_projects', params: {}, result: [{ title: 'CenterFusionDetect3D' }] }],
+      latency_ms: 142,
+      tokens_used: 115,
+      created_at: new Date(Date.now() - 1800000).toISOString()
+    },
+    {
+      id: 'conv-102',
+      session_id: 'sess-beta-88',
+      ip_hash: '9f8e7d6c5b4a3f2e1d0c9b8a7f6e5d4c',
+      prompt: 'What are your core engineering competencies?',
+      response: 'Specialized in PyTorch, CUDA kernel optimization, and high-throughput deployment.',
+      tool_trace: [{ tool: 'list_skills', params: {}, result: [{ name: 'PyTorch' }] }],
+      latency_ms: 120,
+      tokens_used: 88,
+      created_at: new Date(Date.now() - 3600000).toISOString()
+    }
+  ];
 
   test.beforeEach(async ({ page, context }) => {
+    // Reset state before each test
+    activeLlmConfig = {
+      id: 1,
+      provider: 'gemini',
+      model: 'gemini-1.5-flash',
+      model_name: 'gemini-1.5-flash',
+      base_url: '',
+      api_key_masked: '••••8492',
+      system_prompt: 'You are an AI portfolio assistant for the software and machine learning engineer.',
+      daily_rate_limit: 5,
+      is_active: true
+    };
     // Intercept serverless authentication endpoints
     await page.route('**/api/auth/login', async (route) => {
       const data = route.request().postDataJSON();
@@ -102,6 +149,56 @@ test.describe('Admin Panel', () => {
           projects: projectsList,
           experience: experienceList,
           certificates: certificatesList
+        })
+      });
+    });
+
+    await page.route('**/api/admin/llm/config', async (route) => {
+      if (route.request().method() === 'GET') {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ success: true, config: activeLlmConfig })
+        });
+      } else if (route.request().method() === 'POST') {
+        const body = route.request().postDataJSON() || {};
+        activeLlmConfig = {
+          ...activeLlmConfig,
+          provider: body.provider || activeLlmConfig.provider,
+          model: body.model || activeLlmConfig.model,
+          model_name: body.model || activeLlmConfig.model,
+          base_url: body.base_url !== undefined ? body.base_url : activeLlmConfig.base_url,
+          system_prompt: body.system_prompt !== undefined ? body.system_prompt : activeLlmConfig.system_prompt,
+          daily_rate_limit: body.daily_rate_limit ? Number(body.daily_rate_limit) : activeLlmConfig.daily_rate_limit,
+          api_key_masked: body.api_key && !body.api_key.startsWith('••••') ? '••••' + body.api_key.slice(-4) : activeLlmConfig.api_key_masked
+        };
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ success: true, message: 'LLM configuration updated successfully', config: activeLlmConfig })
+        });
+      }
+    });
+
+    await page.route('**/api/admin/llm/test', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          success: true,
+          latency_ms: 142,
+          reply: 'LLM provider connection successful'
+        })
+      });
+    });
+
+    await page.route('**/api/admin/conversations', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          success: true,
+          conversations: conversationsList
         })
       });
     });
@@ -366,6 +463,56 @@ test.describe('Admin Panel', () => {
       await expect(page.getByText('Skills Management')).toBeVisible();
       await expect(page.getByText('PyTorch Lightning')).toBeVisible();
       await expect(page.getByText('DL Frameworks')).toBeVisible();
+    });
+
+    test('Agent Console: parameter configuration, write-only masked API key, latency test, and telemetry', async ({ page }) => {
+      // 1. Switch to Agent Console tab
+      await page.click('button:has-text("Agent Console")');
+      await expect(page.getByText('LLM Provider & Parameter Configuration')).toBeVisible();
+
+      // 2. Check write-only masked API key
+      const apiKeyInput = page.locator('#api-key-input');
+      await expect(apiKeyInput).toHaveValue('••••8492');
+
+      // 3. System prompt validation
+      await expect(page.getByText('✓ Validated Prompt')).toBeVisible();
+
+      // 4. Test Provider Latency
+      const testLatencyBtn = page.locator('button:has-text("Test Provider Latency")');
+      await testLatencyBtn.click();
+      const latencyBadge = page.locator('[data-testid="latency-badge"]');
+      await expect(latencyBadge).toBeVisible();
+      await expect(latencyBadge).toContainText('142ms');
+
+      // 5. Update configuration
+      const modelInput = page.locator('#model-input');
+      await modelInput.fill('gpt-4o-mini');
+      const rateLimitInput = page.locator('#rate-limit-input');
+      await rateLimitInput.fill('12');
+
+      await page.click('button:has-text("Save Settings")');
+      await expect(page.getByText(/LLM configuration saved successfully/i)).toBeVisible();
+      expect(activeLlmConfig.model).toBe('gpt-4o-mini');
+      expect(activeLlmConfig.daily_rate_limit).toBe(12);
+
+      // 6. Telemetry Table & search filter
+      await expect(page.getByText('Anonymized Telemetry Logs')).toBeVisible();
+      await expect(page.getByText('Explain the 3D LiDAR and Radar perception models')).toBeVisible();
+      await expect(page.getByText('What are your core engineering competencies?')).toBeVisible();
+
+      // Search filter
+      const searchInput = page.locator('input[placeholder*="Search prompts"]');
+      await searchInput.fill('LiDAR');
+      await expect(page.getByText('Explain the 3D LiDAR and Radar perception models')).toBeVisible();
+      await expect(page.getByText('What are your core engineering competencies?')).not.toBeVisible();
+
+      // Clear search
+      await searchInput.fill('');
+
+      // 7. One-click "Export as Scripted Demo"
+      const exportBtn = page.locator('button:has-text("Export as Scripted Demo")').first();
+      await exportBtn.click();
+      await expect(page.getByText(/Exported as Scripted Demo/i)).toBeVisible();
     });
   });
 });

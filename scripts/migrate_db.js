@@ -264,6 +264,24 @@ const MIGRATIONS = [
       }
       await client.query(sqlContent);
     }
+  },
+  {
+    name: '007_admin_agent_config',
+    up: async (client) => {
+      const sqlPath = path.join(__dirname, '../migrations/007_admin_agent_config.sql');
+      let sqlContent;
+      if (fs.existsSync(sqlPath)) {
+        sqlContent = fs.readFileSync(sqlPath, 'utf8');
+      } else {
+        sqlContent = `
+          ALTER TABLE llm_config 
+            ADD COLUMN IF NOT EXISTS base_url TEXT DEFAULT '',
+            ADD COLUMN IF NOT EXISTS system_prompt TEXT DEFAULT '',
+            ADD COLUMN IF NOT EXISTS daily_rate_limit INTEGER DEFAULT 5;
+        `;
+      }
+      await client.query(sqlContent);
+    }
   }
 ];
 

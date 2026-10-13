@@ -62,6 +62,26 @@ export default defineConfig(({ mode }) => {
           changeOrigin: true,
           rewrite: () => '/.netlify/functions/agent-chat',
         },
+        '/api/admin/llm/config': {
+          target: 'http://localhost:9999',
+          changeOrigin: true,
+          rewrite: () => '/.netlify/functions/admin-agent?action=config',
+        },
+        '/api/admin/llm/test': {
+          target: 'http://localhost:9999',
+          changeOrigin: true,
+          rewrite: () => '/.netlify/functions/admin-agent?action=test',
+        },
+        '/api/admin/llm': {
+          target: 'http://localhost:9999',
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/api\/admin\/llm/, '/.netlify/functions/admin-agent'),
+        },
+        '/api/admin/conversations': {
+          target: 'http://localhost:9999',
+          changeOrigin: true,
+          rewrite: () => '/.netlify/functions/admin-agent?action=conversations',
+        },
         '/api': {
           target: 'http://localhost:9999',
           changeOrigin: true,
