@@ -42,6 +42,21 @@ export default defineConfig(({ mode }) => {
     server: {
       port: 3000,
       proxy: {
+        '/api/auth/login': {
+          target: 'http://localhost:9999',
+          changeOrigin: true,
+          rewrite: () => '/.netlify/functions/auth-login',
+        },
+        '/api/auth/logout': {
+          target: 'http://localhost:9999',
+          changeOrigin: true,
+          rewrite: () => '/.netlify/functions/auth-logout',
+        },
+        '/api/auth/session': {
+          target: 'http://localhost:9999',
+          changeOrigin: true,
+          rewrite: () => '/.netlify/functions/auth-session',
+        },
         '/api': {
           target: 'http://localhost:9999',
           changeOrigin: true,

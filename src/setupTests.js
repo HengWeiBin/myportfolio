@@ -40,6 +40,13 @@ global.fetch = vi.fn(async (url, options) => {
       json: async () => defaultPortfolio
     };
   }
+  if (typeof url === 'string' && url.includes('/api/auth/session')) {
+    return {
+      ok: true,
+      status: 200,
+      json: async () => ({ authenticated: false })
+    };
+  }
   if (originalFetch) {
     return originalFetch(url, options);
   }

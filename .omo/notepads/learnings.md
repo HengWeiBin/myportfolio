@@ -31,3 +31,17 @@
 3. **Git Tracking for Specific Files in Ignored Directories**:
    - In git, ignoring a folder with `scripts/` prevents git from recursing into the directory, which ignores negation patterns like `!scripts/migrate_db.js`.
    - Using `scripts/*` alongside `!scripts/migrate_db.js` allows git to scan the folder while strictly tracking only approved scripts.
+
+## Ticket #4: Hardened Admin Authentication with Bcrypt and HttpOnly JWT
+
+1. **`cookie` Package Semantic Breaking Changes (v2 vs v0.7.x)**:
+   - `cookie` v2 drastically refactored its public API, removing `cookie.serialize` and `cookie.parse` in favor of `stringifyCookie`/`stringifySetCookie`/`parseCookie`.
+   - Using `cookie@^0.7.2` guarantees standard, long-term compatibility for `cookie.serialize(name, val, options)` with `HttpOnly`, `Path`, `SameSite`, `Max-Age`, and `Secure` attributes across Netlify Functions, AWS Lambda, and Node.js runtimes.
+
+2. **HttpOnly Cookie Transmission & CORS with Credentials**:
+   - When requests include `credentials: 'include'`, the standard requires `Access-Control-Allow-Credentials: 'true'` and explicit origin reflection rather than wildcard `*`.
+   - Returning both standard `Set-Cookie` in `headers` and `multiValueHeaders['Set-Cookie']` ensures robust cookie setting across local Netlify CLI, Vite dev proxy, and Netlify production serverless functions.
+
+3. **Asynchronous Session Verification in React Route Guards**:
+   - Replacing synchronous `localStorage` checks with an asynchronous `/api/auth/session` verification call in admin route guards prevents client-side session spoofing.
+   - Displaying an interim verifying state avoids route flashing while keeping local non-sensitive user metadata synced for dashboard header display and E2E compatibility.
