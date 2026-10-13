@@ -1,9 +1,11 @@
 import React, { useMemo } from 'react';
 import { usePortfolio } from '../../context/ProfileContext';
+import { useVisualSync } from '../../context/VisualSyncContext';
 import { Skeleton } from '../Common/Loading';
 
 const Skills = () => {
   const { skills = [], loading } = usePortfolio();
+  const { highlightSkill, clearHighlight } = useVisualSync();
 
   const skillsData = useMemo(() => {
     const grouped = (skills || []).reduce((acc, skill) => {
@@ -68,7 +70,11 @@ const Skills = () => {
                   {group.items.map((skill) => (
                     <span
                       key={skill}
-                      className="font-mono text-xs px-2.5 py-1 rounded bg-cyber-card text-slate-300 border border-cyber-border hover:text-emerald-400 hover:border-emerald-500/50 hover:bg-emerald-500/10 transition-all cursor-default"
+                      data-testid={`skill-chip-${skill}`}
+                      data-skill={skill}
+                      onMouseEnter={() => highlightSkill(skill, group.category)}
+                      onMouseLeave={clearHighlight}
+                      className="font-mono text-xs px-2.5 py-1 rounded bg-cyber-card text-slate-300 border border-cyber-border hover:text-cyan-electric hover:border-cyan-400/50 hover:bg-cyan-500/10 transition-all cursor-pointer select-none"
                     >
                       [{skill}]
                     </span>
