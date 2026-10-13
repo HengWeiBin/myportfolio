@@ -20,3 +20,23 @@
    - Switched unit test runner from CRA Jest to Vitest v3 with `jsdom`.
    - Configured setup file `src/setupTests.js` with `@testing-library/jest-dom/vitest` and canvas context mock for jsdom.
    - Scoped Vitest `include` pattern to `src/**/*.{test,spec}.{js,jsx,ts,tsx}` to isolate unit tests from Playwright E2E tests in `tests/`.
+
+## Ticket #3: Secure Public Portfolio Data Pipeline
+
+1. **Serverless Data Aggregation via Netlify Functions**:
+   - Implemented `netlify/functions/portfolio.js` (`GET /api/portfolio`) that queries Neon serverless PostgreSQL and aggregates `{ profile, skills, projects, experience, certificates }` in a single network round-trip.
+   - Configured proxy rewrites in both `netlify.toml` and `vite.config.js` to redirect `/api/portfolio` transparently to `/.netlify/functions/portfolio`.
+   - Stripped private database columns and admin credentials from the aggregation endpoint response.
+
+2. **Database Migration Runner and `schema_migrations` Table**:
+   - Enhanced `scripts/migrate_db.js` to ensure the `schema_migrations` tracking table is provisioned (`CREATE TABLE IF NOT EXISTS schema_migrations ...`).
+   - Implemented transaction-safe migration runner that executes pending migrations in order and skips previously recorded migrations.
+   - Exposed npm script `"migrate": "node scripts/migrate_db.js"`.
+
+3. **Front-End Bundle Credential Scrubbing**:
+   - Configured `vite.config.js` to filter out any environment variables matching `DATABASE_URL` (including `REACT_APP_DATABASE_URL` and `VITE_DATABASE_URL`) from Vite `define` replacements.
+   - Decoupled static `db.js` dependencies from `src/services/api.js` and `src/services/auth.js` via lazy dynamic imports, allowing Rollup to separate DB client code into a deferred chunk and keeping the main public bundle 100% free of database connection strings and Neon drivers.
+
+4. **Unified React Context Consumption & Skeleton Loading**:
+   - Upgraded `ProfileContext.js` into an aggregated portfolio state provider exposing both `useProfile` and `usePortfolio` hooks.
+   - Migrated all public sections (`Projects`, `Certificates`, `Experience`, `Skills`) to consume `usePortfolio()` with skeleton loading states, completely removing direct `db.js` imports across all public components.

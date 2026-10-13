@@ -1,11 +1,10 @@
-import sql from './db';
-
 // Simple client-side auth service
 // WARNING: This is not secure for high-stakes applications as logic is exposed in client bundle.
 // Sufficient for personal portfolio as requested.
 
 export const login = async (email, password) => {
     try {
+        const { default: sql } = await import('./db');
         const result = await sql`
       SELECT * FROM admins 
       WHERE email = ${email} AND password = ${password}

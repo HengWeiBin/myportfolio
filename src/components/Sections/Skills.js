@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useMemo } from 'react';
 import styled from 'styled-components';
-import { getSkills } from '../../services/api';
+import { usePortfolio } from '../../context/ProfileContext';
 import { Skeleton } from '../Common/Loading';
 
 const Section = styled.section`
@@ -72,34 +72,22 @@ const SkillTag = styled.span`
 `;
 
 const Skills = () => {
-  const [skillsData, setSkillsData] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { skills = [], loading } = usePortfolio();
 
-  useEffect(() => {
-    const fetchSkills = async () => {
-      try {
-        const skills = await getSkills();
-        // Group skills by category
-        const grouped = skills.reduce((acc, skill) => {
-          if (!acc[skill.category]) acc[skill.category] = [];
-          acc[skill.category].push(skill.name);
-          return acc;
-        }, {});
-        
-        // Convert to array format for rendering
-        const formattedData = Object.keys(grouped).map(category => ({
-          category,
-          items: grouped[category]
-        }));
-        setSkillsData(formattedData);
-      } catch (e) {
-        console.error("Failed to load skills", e);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchSkills();
-  }, []);
+  const skillsData = useMemo(() => {
+    // Group skills by category
+    const grouped = (skills || []).reduce((acc, skill) => {
+      if (!acc[skill.category]) acc[skill.category] = [];
+      acc[skill.category].push(skill.name);
+      return acc;
+    }, {});
+
+    // Convert to array format for rendering
+    return Object.keys(grouped).map(category => ({
+      category,
+      items: grouped[category]
+    }));
+  }, [skills]);
 
   return (
     <Section id="skills">

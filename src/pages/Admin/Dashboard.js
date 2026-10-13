@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { toast } from 'react-toastify';
-import sql from '../../services/db';
 import {
     addProject, updateProject, deleteProject,
     addCertificate, updateCertificate, deleteCertificate,

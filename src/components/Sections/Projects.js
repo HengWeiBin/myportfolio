@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import styled from 'styled-components';
 import ReactMarkdown from 'react-markdown';
-import sql from '../../services/db';
+import { usePortfolio } from '../../context/ProfileContext';
 
 // Visualizations
 import NeuralArch from '../Visualizations/NeuralArch';
@@ -274,22 +274,7 @@ const PROJECT_VISUALS = {
 };
 
 const Projects = () => {
-  const [projects, setProjects] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchProjects = async () => {
-      try {
-        const data = await sql`SELECT * FROM projects ORDER BY date_end DESC`;
-        setProjects(data);
-      } catch (e) {
-        console.error(e);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchProjects();
-  }, []);
+  const { projects, loading } = usePortfolio();
 
   const renderVisual = (project) => {
     // 1. Check if there's a mapped visual type
