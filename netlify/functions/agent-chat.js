@@ -262,7 +262,7 @@ async function resolveLlmConfig(sql, customSecret) {
   if (sql) {
     try {
       const configs = await sql`
-        SELECT provider, model_name, api_key_encrypted, iv, auth_tag 
+        SELECT provider, model_name, api_key_encrypted, iv, auth_tag, base_url, system_prompt, daily_rate_limit 
         FROM llm_config 
         WHERE is_active = TRUE 
         ORDER BY id DESC 
@@ -276,12 +276,41 @@ async function resolveLlmConfig(sql, customSecret) {
           return {
             provider: item.provider || 'gemini',
             model: item.model_name || 'gemini-1.5-flash',
-            apiKey: decryptedKey
+            apiKey: decryptedKey,
+            baseUrl: item.base_url || '',
+            systemPrompt: item.system_prompt || '',
+            dailyRateLimit: item.daily_rate_limit || DAILY_RATE_LIMIT
           };
         }
       }
     } catch (err) {
-      console.warn('[agent-chat] Could not resolve key from llm_config table:', err.message);
+      // Fallback if extra columns not yet migrated
+      try {
+        const basicConfigs = await sql`
+          SELECT provider, model_name, api_key_encrypted, iv, auth_tag 
+          FROM llm_config 
+          WHERE is_active = TRUE 
+          ORDER BY id DESC 
+          LIMIT 1
+        `;
+        if (basicConfigs.length > 0) {
+          const item = basicConfigs[0];
+          const secret = customSecret || process.env.ENCRYPTION_SECRET;
+          const decryptedKey = decrypt(item.api_key_encrypted, secret, item.iv, item.auth_tag);
+          if (decryptedKey) {
+            return {
+              provider: item.provider || 'gemini',
+              model: item.model_name || 'gemini-1.5-flash',
+              apiKey: decryptedKey,
+              baseUrl: '',
+              systemPrompt: '',
+              dailyRateLimit: DAILY_RATE_LIMIT
+            };
+          }
+        }
+      } catch (innerErr) {
+        console.warn('[agent-chat] Could not resolve key from llm_config table:', innerErr.message);
+      }
     }
   }
 
@@ -458,8 +487,12 @@ exports.handler = async (event) => {
     }
   }
 
-  // 3. Rate limiter check (max 5 queries/day default)
-  const { allowed } = await checkAndIncrementRateLimit(ipHash, sql, DAILY_RATE_LIMIT);
+  // 3. Resolve active LLM config to dynamically apply rate limit and custom prompt
+  const llmConfig = await resolveLlmConfig(sql);
+  const effectiveRateLimit = (llmConfig && llmConfig.dailyRateLimit) ? Number(llmConfig.dailyRateLimit) : DAILY_RATE_LIMIT;
+
+  // Rate limiter check
+  const { allowed } = await checkAndIncrementRateLimit(ipHash, sql, effectiveRateLimit);
   if (!allowed) {
     return {
       statusCode: 200,

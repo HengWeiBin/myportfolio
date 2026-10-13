@@ -18,8 +18,9 @@ import ExperienceModal from './components/ExperienceModal';
 import SkillsTab from './components/SkillsTab';
 import SkillModal from './components/SkillModal';
 import ProfileTab from './components/ProfileTab';
+import AgentTab from './components/AgentTab';
 
-const TABS = ['projects', 'certificates', 'experience', 'profile', 'skills'];
+const TABS = ['projects', 'certificates', 'experience', 'profile', 'skills', 'agent'];
 
 const Dashboard = () => {
   const [activeTab, setActiveTab] = useState('projects');
@@ -33,6 +34,10 @@ const Dashboard = () => {
   const [confirmModal, setConfirmModal] = useState({ isOpen: false, id: null });
 
   const fetchData = useCallback(async () => {
+    if (activeTab === 'agent') {
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     try {
       if (activeTab === 'projects') setData(await getProjects());
@@ -137,7 +142,7 @@ const Dashboard = () => {
                 : 'text-slate-400 hover:text-slate-200 hover:bg-white/5'
             }`}
           >
-            {tab}
+            {tab === 'agent' ? 'Agent Console' : tab}
           </button>
         ))}
       </div>
@@ -172,6 +177,9 @@ const Dashboard = () => {
         )}
         {activeTab === 'profile' && (
           <ProfileTab initialProfile={profile} onSaveProfile={handleProfileSave} />
+        )}
+        {activeTab === 'agent' && (
+          <AgentTab />
         )}
       </div>
 

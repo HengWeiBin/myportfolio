@@ -229,3 +229,101 @@ export const updateProfile = async (profile) => {
     `;
   }
 };
+
+// --- AGENT CONSOLE & TELEMETRY (Issue #11) ---
+
+export const getLlmConfig = async () => {
+  const baseUrl = typeof window !== 'undefined' && window.location?.origin
+    ? window.location.origin
+    : '';
+  const res = await fetch(`${baseUrl}/api/admin/llm/config`, {
+    credentials: 'include'
+  });
+  if (!res.ok) {
+    throw new Error(`Failed to fetch LLM config: ${res.status} ${res.statusText}`);
+  }
+  const data = await res.json();
+  return data.config || data;
+};
+
+export const updateLlmConfig = async (config) => {
+  const baseUrl = typeof window !== 'undefined' && window.location?.origin
+    ? window.location.origin
+    : '';
+  const res = await fetch(`${baseUrl}/api/admin/llm/config`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(config)
+  });
+  if (!res.ok) {
+    throw new Error(`Failed to update LLM config: ${res.status} ${res.statusText}`);
+  }
+  const data = await res.json();
+  return data.config || data;
+};
+
+export const testLlmLatency = async (params = {}) => {
+  const baseUrl = typeof window !== 'undefined' && window.location?.origin
+    ? window.location.origin
+    : '';
+  const res = await fetch(`${baseUrl}/api/admin/llm/test`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify(params)
+  });
+  if (!res.ok) {
+    throw new Error(`Failed to test LLM latency: ${res.status} ${res.statusText}`);
+  }
+  return await res.json();
+};
+
+export const getConversations = async () => {
+  const baseUrl = typeof window !== 'undefined' && window.location?.origin
+    ? window.location.origin
+    : '';
+  const res = await fetch(`${baseUrl}/api/admin/conversations`, {
+    credentials: 'include'
+  });
+  if (!res.ok) {
+    throw new Error(`Failed to fetch conversations: ${res.status} ${res.statusText}`);
+  }
+  const data = await res.json();
+  return data.conversations || [];
+};
+
+export const exportConversationAsDemo = (conversation) => {
+  if (!conversation) return null;
+  const traceId = `exported_${(conversation.id || Date.now()).toString().slice(0, 8)}`;
+  const isZh = /[\u4e00-\u9fa5]/.test(conversation.prompt || '');
+  const keywords = (conversation.prompt || '')
+    .toLowerCase()
+    .replace(/[^\w\u4e00-\u9fa5\s]/g, ' ')
+    .split(/\s+/)
+    .filter(k => k.length >= 2)
+    .slice(0, 8);
+
+  const demoTrace = {
+    id: traceId,
+    lang: isZh ? 'zh' : 'en',
+    keywords,
+    thought: `Scripted demonstration generated from conversation ${conversation.session_id || 'telemetry'}`,
+    toolCalls: Array.isArray(conversation.tool_trace) ? conversation.tool_trace : [],
+    uiActions: [],
+    response: conversation.response || ''
+  };
+
+  // Persist into localStorage for fallback traces
+  if (typeof window !== 'undefined' && window.localStorage) {
+    try {
+      const stored = JSON.parse(window.localStorage.getItem('agent_fallback_traces') || '[]');
+      const updated = [demoTrace, ...stored.filter(t => t.id !== traceId)];
+      window.localStorage.setItem('agent_fallback_traces', JSON.stringify(updated));
+    } catch (e) {
+      console.warn('[api] Failed to save demo trace to localStorage:', e);
+    }
+  }
+
+  return demoTrace;
+};

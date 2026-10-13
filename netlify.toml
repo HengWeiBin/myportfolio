@@ -43,6 +43,21 @@
   status = 200
 
 [[redirects]]
+  from = "/api/admin/llm/config"
+  to = "/.netlify/functions/admin-agent?action=config"
+  status = 200
+
+[[redirects]]
+  from = "/api/admin/llm/test"
+  to = "/.netlify/functions/admin-agent?action=test"
+  status = 200
+
+[[redirects]]
+  from = "/api/admin/conversations"
+  to = "/.netlify/functions/admin-agent?action=conversations"
+  status = 200
+
+[[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200

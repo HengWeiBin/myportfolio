@@ -165,4 +165,22 @@
    - Implemented `fallbackTraces.js` providing curated conversation traces with mock reasoning thoughts, tool calls, and UI action targets in both English and Traditional Chinese.
    - When the 5-requests-per-day rate limit is triggered (`event: error` or HTTP 429) or network errors occur, the UI displays an amber notification badge and immediately initiates simulated token streaming with typewriter cursor pacing, ensuring an uninterrupted interactive demo experience.
 
+## Ticket #11: Agent Console, Latency Test, and Conversation Telemetry
+
+1. **Dedicated Serverless Admin Endpoint (`netlify/functions/admin-agent.js`)**:
+   - Consolidated admin-only agent operations into a dedicated endpoint with multi-vector JWT / API key authentication verification.
+   - Configured exact and wildcard redirects in `netlify.toml` and Vite dev proxy rules in `vite.config.js` for `/api/admin/llm/config`, `/api/admin/llm/test`, and `/api/admin/conversations`.
+
+2. **Schema Extension (`007_admin_agent_config.sql`)**:
+   - Extended `llm_config` with `base_url`, `system_prompt`, and `daily_rate_limit` columns with idempotent `ADD COLUMN IF NOT EXISTS`.
+   - Registered migration `007_admin_agent_config` in `scripts/migrate_db.js` while maintaining graceful in-memory fallbacks when running without an active database connection.
+
+3. **Sub-250-LOC Modular Component Architecture in Admin**:
+   - Partitioned the Agent Console into:
+     - `src/pages/Admin/components/AgentTab.js` (orchestrating view, data fetching, toasts)
+     - `src/pages/Admin/components/Agent/LlmConfigForm.js` (parameter form, instant system prompt validator, latency badge)
+     - `src/pages/Admin/components/Agent/TelemetryTable.js` (searchable/filterable telemetry table with expandable traces and scripted demo export)
+   - Integrated `'agent'` tab as "Agent Console" directly in `src/pages/Admin/Dashboard.js` keeping all component files strictly under 250 LOC.
+
+
 

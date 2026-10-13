@@ -124,4 +124,19 @@
    - DOM methods like `Element.prototype.scrollIntoView` are absent in `jsdom` environments unless polyfilled or guarded.
    - Using defensive optional calls (`typeof element?.scrollIntoView === 'function'`) and configuring a global mock in `setupTests.js` guarantees smooth execution across real browser engines (Playwright/Chromium) and headless unit runners (Vitest/jsdom) alike.
 
+## Ticket #11: Agent Console, Latency Test, and Conversation Telemetry
+
+1. **Write-Only Credentials & Masked Display Security Pattern**:
+   - Storing API keys encrypted at rest via AES-256-GCM requires strict write-only UI handling. Never serialize or return plaintext secrets in JSON endpoints. Returning `••••last4` enables administrators to verify which key is configured without exposing secret credentials to browser memory or network inspectors.
+   - When updating settings without providing a new key (or submitting the masked placeholder), the server must preserve existing encrypted credentials and IVs rather than overwriting with masked strings.
+
+2. **Live Round-Trip Latency Verification in Serverless Architectures**:
+   - Round-trip latency benchmarking across external LLM APIs (Gemini, OpenAI, or custom gateways) requires defensive timeouts (`AbortController` signal) and graceful degraded responses in CI/test environments so synthetic network checks do not block deployment pipelines.
+   - Immediate feedback badges with visual status indicators (< 300ms emerald, < 800ms amber, > 800ms rose) give operators instant confirmation of network topology health.
+
+3. **Dynamic Parameter Synchronization Between Admin Config & Runtime Proxy**:
+   - Linking `llm_config` (custom system prompt, model name, daily IP rate limit) directly into runtime proxy handlers (`agent-chat.js`) allows changes made via the admin console to take effect immediately without requiring service restarts or redeployments.
+   - Anonymized telemetry logging with one-click export into static fallback trace formats bridges production chat failures with zero-network resilience.
+
+
 
