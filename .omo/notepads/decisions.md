@@ -58,3 +58,23 @@
    - Stripped all client-side plaintext password comparisons and direct database imports from `src/services/auth.js`.
    - Updated `src/pages/Admin/Login.js` and `src/pages/Admin/AdminLayout.js` to asynchronously verify authentication status against `/api/auth/session`, eliminating localStorage tampering vulnerabilities while retaining local non-sensitive profile state for UI consistency.
    - Fixed missing API query methods in `src/pages/Admin/Dashboard.js` to consume `getProjects`, `getCertificates`, and `getExperience` instead of obsolete undeclared `sql` template tags.
+
+## Ticket #5: Schema Tiered Content, NDA Case Studies, and Migration Runner
+
+1. **Sequential SQL Migration System with Idempotent Tracking**:
+   - Established `migrations/` directory tracking raw SQL migration files (`001_...` through `005_...`).
+   - Extended `scripts/migrate_db.js` with `loadSqlMigrations` to automatically discover and execute raw `.sql` files alongside programmatic migrations, recording applied runs inside `schema_migrations`.
+   - Migration `005_tiered_content_and_nda_metadata` extends `projects` (`tier`, `sort_order`, `visual_type`, `is_confidential`, `repo_visibility`, `metrics`), `certificates` (`category`, `tier`, `sort_order`), and `experience` (`sort_order`).
+
+2. **Server-Side NDA Redaction and Tiered Structuring in `/api/portfolio`**:
+   - Enhanced `netlify/functions/portfolio.js` to sort items by `sort_order ASC`.
+   - Added support for `?tier=<tier>` query parameter filtering.
+   - Output structured dictionaries `tiered_projects` and `tiered: { projects, certificates }` without altering the existing array contract on `payload.projects`.
+   - Automatically redacts `link` (sets to `null`) and private `metrics` (sets to `{}`) for projects where `is_confidential === true` unless authenticated with valid `admin_jwt` cookie, Bearer token, or `x-admin-key`.
+
+3. **Protected Admin CRUD Endpoint (`/api/admin/crud`)**:
+   - Implemented `netlify/functions/admin-crud.js` providing authenticated mutation operations for projects, certificates, and experience.
+   - Configured route rewrite `/api/admin/crud` in `netlify.toml`.
+   - Updated `src/services/api.js` and `src/pages/Admin/Dashboard.js` to support editing and updating tiered content, sort orders, and NDA parameters.
+   - Updated `src/components/Sections/Experience.js` to support markdown rendering for job descriptions via `ReactMarkdown`.
+

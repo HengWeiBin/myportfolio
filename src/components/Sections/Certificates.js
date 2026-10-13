@@ -127,6 +127,7 @@ const Certificates = () => {
 
   // Helper to categorize achievements if categorical data is missing
   const getCategory = (item) => {
+    if (item.category) return item.category;
     const lowerTitle = item.title.toLowerCase();
     if (lowerTitle.includes('paper') || lowerTitle.includes('conference') || lowerTitle.includes('journal')) return 'Paper';
     if (lowerTitle.includes('competition') || lowerTitle.includes('hackathon') || lowerTitle.includes('award')) return 'Competition';

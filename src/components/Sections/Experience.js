@@ -1,5 +1,6 @@
 import React from 'react';
 import styled from 'styled-components';
+import ReactMarkdown from 'react-markdown';
 import { usePortfolio } from '../../context/ProfileContext';
 import { Skeleton } from '../Common/Loading';
 
@@ -74,9 +75,30 @@ const DateRange = styled.span`
   margin-bottom: 1rem;
 `;
 
-const Description = styled.p`
+const Description = styled.div`
   color: var(--text-secondary);
   line-height: 1.6;
+
+  p {
+    margin-bottom: 0.5rem;
+  }
+
+  ul, ol {
+    padding-left: 1.25rem;
+    margin-bottom: 0.5rem;
+  }
+
+  li {
+    margin-bottom: 0.25rem;
+  }
+
+  code {
+    background: rgba(110, 118, 129, 0.2);
+    color: var(--accent);
+    padding: 0.2em 0.4em;
+    border-radius: 4px;
+    font-size: 0.85em;
+  }
 `;
 
 const Experience = () => {
@@ -114,7 +136,9 @@ const Experience = () => {
               <Role>{exp.role}</Role>
               <Company>{exp.company}</Company>
               <DateRange>{exp.date_range}</DateRange>
-              <Description>{exp.description}</Description>
+              <Description>
+                <ReactMarkdown>{exp.description}</ReactMarkdown>
+              </Description>
             </TimelineItem>
           ))}
         </TimelineWrapper>
@@ -122,5 +146,6 @@ const Experience = () => {
     </Section>
   );
 };
+
 
 export default Experience;
