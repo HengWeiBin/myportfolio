@@ -1,6 +1,7 @@
 const { Pool } = require('pg');
 const fs = require('fs');
 const path = require('path');
+const bcrypt = require('bcryptjs');
 require('dotenv').config();
 
 const getPool = (customConnectionString) => {
@@ -147,6 +148,23 @@ const MIGRATIONS = [
         ];
         for (const skill of skills) {
           await client.query('INSERT INTO skills (category, name) VALUES ($1, $2)', [skill.category, skill.name]);
+        }
+      }
+    }
+  },
+  {
+    name: '004_harden_admin_passwords_bcrypt',
+    up: async (client) => {
+      await client.query(`
+        ALTER TABLE admins 
+        ALTER COLUMN password TYPE VARCHAR(255);
+      `);
+
+      const adminsRes = await client.query('SELECT id, password FROM admins');
+      for (const admin of adminsRes.rows) {
+        if (!admin.password || (!admin.password.startsWith('$2a$') && !admin.password.startsWith('$2b$'))) {
+          const hash = await bcrypt.hash(admin.password || 'admin', 10);
+          await client.query('UPDATE admins SET password = $1 WHERE id = $2', [hash, admin.id]);
         }
       }
     }

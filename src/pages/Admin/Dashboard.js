@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { toast } from 'react-toastify';
 import {
-    addProject, updateProject, deleteProject,
-    addCertificate, updateCertificate, deleteCertificate,
-    addExperience, updateExperience, deleteExperience,
+    getProjects, addProject, updateProject, deleteProject,
+    getCertificates, addCertificate, updateCertificate, deleteCertificate,
+    getExperience, addExperience, updateExperience, deleteExperience,
     getProfile, updateProfile,
     getSkills, addSkill, updateSkill, deleteSkill
 } from '../../services/api';
@@ -208,13 +208,13 @@ const Dashboard = () => {
         let result = [];
         try {
             if (activeTab === 'projects') {
-                result = await sql`SELECT * FROM projects ORDER BY date_end DESC`;
+                result = await getProjects();
                 setData(result);
             } else if (activeTab === 'certificates') {
-                result = await sql`SELECT * FROM certificates ORDER BY date DESC`;
+                result = await getCertificates();
                 setData(result);
             } else if (activeTab === 'experience') {
-                result = await sql`SELECT * FROM experience ORDER BY id DESC`;
+                result = await getExperience();
                 setData(result);
             } else if (activeTab === 'skills') {
                 result = await getSkills();

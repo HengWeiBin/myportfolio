@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { useNavigate } from 'react-router-dom';
-import { login } from '../../services/auth';
+import { login, checkSession } from '../../services/auth';
 
 const LoginWrapper = styled.div`
   min-height: 100vh;
@@ -76,16 +76,31 @@ const Login = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
+    const [submitting, setSubmitting] = useState(false);
     const navigate = useNavigate();
+
+    useEffect(() => {
+        let isMounted = true;
+        checkSession().then((user) => {
+            if (isMounted && user) {
+                navigate('/admin/dashboard');
+            }
+        });
+        return () => {
+            isMounted = false;
+        };
+    }, [navigate]);
 
     const handleLogin = async (e) => {
         e.preventDefault();
+        setError('');
+        setSubmitting(true);
         const res = await login(email, password);
+        setSubmitting(false);
         if (res.success) {
-            localStorage.setItem('admin_user', JSON.stringify(res.user));
             navigate('/admin/dashboard');
         } else {
-            setError(res.message);
+            setError(res.message || 'Invalid credentials');
         }
     };
 
@@ -103,7 +118,7 @@ const Login = () => {
                         <label>Password</label>
                         <input type="password" value={password} onChange={e => setPassword(e.target.value)} required />
                     </InputGroup>
-                    <Button type="submit">LOGIN</Button>
+                    <Button type="submit" disabled={submitting}>{submitting ? 'LOGGING IN...' : 'LOGIN'}</Button>
                 </form>
             </LoginBox>
         </LoginWrapper>

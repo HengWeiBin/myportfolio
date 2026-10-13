@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
 import { Routes, Route, useNavigate, Link } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
@@ -29,7 +29,6 @@ const Layout = styled.div`
     color: var(--text-secondary);
   }
 `;
-
 
 const Sidebar = styled.div`
   width: 250px;
@@ -73,37 +72,65 @@ const Content = styled.div`
 `;
 
 const AdminLayout = () => {
-    const navigate = useNavigate();
+  const navigate = useNavigate();
+  const [isAuthenticated, setIsAuthenticated] = useState(null);
 
-    useEffect(() => {
-        if (!checkSession()) {
-            navigate('/admin/login');
-        }
-    }, [navigate]);
-
-    const handleLogout = () => {
-        logout();
+  useEffect(() => {
+    let isMounted = true;
+    const verify = async () => {
+      const user = await checkSession();
+      if (!isMounted) return;
+      if (!user) {
+        setIsAuthenticated(false);
         navigate('/admin/login');
+      } else {
+        setIsAuthenticated(true);
+      }
     };
+    verify();
+    return () => {
+      isMounted = false;
+    };
+  }, [navigate]);
 
+  const handleLogout = async () => {
+    await logout();
+    navigate('/admin/login');
+  };
+
+  if (isAuthenticated === null) {
     return (
-        <Layout>
-            <Sidebar>
-                <h3 style={{ marginBottom: '2rem', color: 'var(--accent)' }}>Admin Panel</h3>
-                <NavItem to="/admin/dashboard">Dashboard</NavItem>
-                <NavItem to="/">View Site</NavItem>
-                <LogoutBtn onClick={handleLogout}>Logout</LogoutBtn>
-            </Sidebar>
-            <Content>
-                <Routes>
-                    <Route path="dashboard" element={<Dashboard />} />
-                    <Route path="*" element={<div>select an option</div>} />
-                </Routes>
-            </Content>
-            <ToastContainer position="bottom-right" theme="dark" />
-        </Layout>
+      <Layout>
+        <Content style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ color: 'var(--text-secondary)', fontFamily: 'var(--font-mono)' }}>
+            Verifying session...
+          </div>
+        </Content>
+      </Layout>
     );
-};
+  }
 
+  if (!isAuthenticated) {
+    return null;
+  }
+
+  return (
+    <Layout>
+      <Sidebar>
+        <h3 style={{ marginBottom: '2rem', color: 'var(--accent)' }}>Admin Panel</h3>
+        <NavItem to="/admin/dashboard">Dashboard</NavItem>
+        <NavItem to="/">View Site</NavItem>
+        <LogoutBtn onClick={handleLogout}>Logout</LogoutBtn>
+      </Sidebar>
+      <Content>
+        <Routes>
+          <Route path="dashboard" element={<Dashboard />} />
+          <Route path="*" element={<div>select an option</div>} />
+        </Routes>
+      </Content>
+      <ToastContainer position="bottom-right" theme="dark" />
+    </Layout>
+  );
+};
 
 export default AdminLayout;

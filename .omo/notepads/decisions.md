@@ -40,3 +40,21 @@
 4. **Unified React Context Consumption & Skeleton Loading**:
    - Upgraded `ProfileContext.js` into an aggregated portfolio state provider exposing both `useProfile` and `usePortfolio` hooks.
    - Migrated all public sections (`Projects`, `Certificates`, `Experience`, `Skills`) to consume `usePortfolio()` with skeleton loading states, completely removing direct `db.js` imports across all public components.
+
+## Ticket #4: Hardened Admin Authentication with Bcrypt and HttpOnly JWT
+
+1. **Pure JavaScript Bcrypt (`bcryptjs`) & Schema Migration**:
+   - Adopted `bcryptjs` over native `bcrypt` to prevent native C++ compilation failures during cross-platform installations (Windows/Linux/macOS/Netlify CI).
+   - Created database migration `004_harden_admin_passwords_bcrypt` in `scripts/migrate_db.js` that updates `admins.password` to `VARCHAR(255)` and safely hashes existing plaintext passwords in-place.
+
+2. **HttpOnly Cookie-Based Session Architecture**:
+   - Partitioned authentication into three dedicated Netlify serverless functions:
+     - `auth-login.js` (`POST /api/auth/login`): Verifies credentials via `bcrypt.compare`, issues signed JWT in an `HttpOnly; Path=/; SameSite=Lax` cookie, and returns sanitized `{ success: true, user: { id, email } }`.
+     - `auth-logout.js` (`POST /api/auth/logout`): Clears the session cookie via `Max-Age=0`.
+     - `auth-session.js` (`GET /api/auth/session`): Verifies JWT signature and expiry, returning `{ authenticated: true, user }` or evicting expired cookies.
+   - Configured proxy redirects across both `netlify.toml` and `vite.config.js` for `/api/auth/login`, `/api/auth/logout`, and `/api/auth/session`.
+
+3. **Client-Side Auth Hardening & UI State Synchronization**:
+   - Stripped all client-side plaintext password comparisons and direct database imports from `src/services/auth.js`.
+   - Updated `src/pages/Admin/Login.js` and `src/pages/Admin/AdminLayout.js` to asynchronously verify authentication status against `/api/auth/session`, eliminating localStorage tampering vulnerabilities while retaining local non-sensitive profile state for UI consistency.
+   - Fixed missing API query methods in `src/pages/Admin/Dashboard.js` to consume `getProjects`, `getCertificates`, and `getExperience` instead of obsolete undeclared `sql` template tags.
