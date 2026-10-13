@@ -1,12 +1,33 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import TrainingLog from '../Hero/TrainingLog';
+import HeroTerminal from '../Agent/HeroTerminal';
 import { useProfile } from '../../context/ProfileContext';
+import { useAgent } from '../Agent/AgentContext';
 
 const Hero = () => {
   const { profile } = useProfile();
+  const { setIsHeroVisible } = useAgent();
+  const heroRef = useRef(null);
 
   const title = profile?.title || "Machine Learning Engineer \n& AI Researcher.";
   const subtitle = profile?.bio || "Translating data into intelligence. Specializing in LLMs, Computer Vision, and scalable MLOps pipelines.";
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.IntersectionObserver) return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        setIsHeroVisible(entry.isIntersecting);
+      },
+      { threshold: 0.1 }
+    );
+
+    if (heroRef.current) {
+      observer.observe(heroRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, [setIsHeroVisible]);
 
   const scrollToSection = (e, id) => {
     e.preventDefault();
@@ -17,7 +38,11 @@ const Hero = () => {
   };
 
   return (
-    <section id="home" className="min-h-[85vh] flex items-center justify-center relative py-12 px-4 sm:px-6 lg:px-8">
+    <section
+      id="home"
+      ref={heroRef}
+      className="min-h-[85vh] flex items-center justify-center relative py-12 px-4 sm:px-6 lg:px-8"
+    >
       <div className="w-full max-w-4xl mx-auto">
         {/* Terminal Window Frame */}
         <div className="glass-panel-glow rounded-xl overflow-hidden shadow-2xl border border-cyber-border-bright transition-all">
@@ -95,6 +120,11 @@ const Hero = () => {
                 >
                   $ initiate_handshake.sh
                 </a>
+              </div>
+
+              {/* Interactive AI Mission Control Terminal */}
+              <div className="pt-8 border-t border-cyber-border/70 mt-6">
+                <HeroTerminal />
               </div>
             </div>
           </div>

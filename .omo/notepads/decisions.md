@@ -151,4 +151,18 @@
    - Added interactive tier selectors (`featured`, `standard`, `foundation`, `archive`) and increment/decrement sorting controls (`▲`/`▼`) directly in `ProjectsTab` and `CertificatesTab` table rows.
    - Preserved full backward compatibility with Playwright E2E selectors (`button:has-text("+ New Entry")`, `input[placeholder="Title"]`, `textarea[placeholder="Description (Markdown supported)"]`, `button:has-text("Save Changes")`, `button:has-text("UPDATE SYSTEM PROFILE")`).
 
+## Ticket #10: Mission Control Hero Terminal, Floating Dock, and UI Control
+
+1. **Global Agent State & Action Pipeline Architecture (`AgentContext` & `useClientActions`)**:
+   - Centralized message history, token streaming state, rate limit indicators, viewport visibility (`isHeroVisible`), and active UI action targets (`highlightedProject`, `activeSkillFilter`) into a unified `AgentProvider`.
+   - Decoupled client action execution into `useClientActions`, exposing `scroll_to`, `highlight_project`, and `filter_skills`. When tools like `list_projects` or `list_skills` resolve in live SSE frames or fallback traces, the dispatcher automatically triggers smooth scrolling and neon glow highlighting across project cards and capabilities grids.
+
+2. **Dual-Surface Agent Presentation (Hero Terminal + Floating Bottom Capsule Dock)**:
+   - Preserved the mission control cyber aesthetic by embedding `HeroTerminal` directly into the Hero section terminal window frame alongside bio and CTAs.
+   - Integrated an `IntersectionObserver` on `#home`. When visitors scroll beyond the Hero, the chat seamlessly collapses into a floating bottom capsule dock animated via `framer-motion`. Clicking the capsule or pressing `Cmd+K` / `Ctrl+K` globally expands the full-featured mini chat drawer without losing conversation context.
+
+3. **Curated Bilingual Scripted Playback for Zero-Failure Fallback**:
+   - Implemented `fallbackTraces.js` providing curated conversation traces with mock reasoning thoughts, tool calls, and UI action targets in both English and Traditional Chinese.
+   - When the 5-requests-per-day rate limit is triggered (`event: error` or HTTP 429) or network errors occur, the UI displays an amber notification badge and immediately initiates simulated token streaming with typewriter cursor pacing, ensuring an uninterrupted interactive demo experience.
+
 
