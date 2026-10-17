@@ -11,6 +11,7 @@ import { uploadImageToR2, deleteImageFromR2 } from '../../services/upload';
 import ConfirmModal from '../../components/Common/ConfirmModal';
 import { FloatingActionBar } from './components/Shared';
 import useStagedList from './hooks/useStagedList';
+import { batchUpdateItems } from './services/batchSave';
 import ProjectsTab from './components/ProjectsTab';
 import ProjectModal from './components/ProjectModal';
 import CertificatesTab from './components/CertificatesTab';
@@ -39,14 +40,17 @@ const Dashboard = () => {
   const isBatchSupportedTab = ['projects', 'certificates', 'experience'].includes(activeTab);
 
   const {
-    stagedData, isDirty, dirtyCount, isItemDirty,
+    stagedData, isDirty, dirtyCount, dirtyItems, isItemDirty,
     discard, commit, moveUp, moveDown, updateField,
   } = useStagedList(isBatchSupportedTab ? data : []);
 
   const handleBatchSave = async () => {
+    if (!dirtyItems || dirtyItems.length === 0) return;
     setIsSaving(true);
     try {
-      commit();
+      await batchUpdateItems(activeTab, dirtyItems);
+      setData(stagedData);
+      commit(stagedData);
       toast.success('Changes saved successfully');
     } catch (e) {
       toast.error('Failed to save changes: ' + e.message);
@@ -222,21 +226,15 @@ const Dashboard = () => {
       )}
 
       <ConfirmModal
-        isOpen={confirmModal.isOpen}
-        title="Delete Item"
+        isOpen={confirmModal.isOpen} title="Delete Item"
         message="Are you sure you want to delete this item? This action cannot be undone."
-        onConfirm={performDelete}
-        onCancel={() => setConfirmModal({ isOpen: false, id: null })}
-        confirmText="Delete"
-        cancelText="Cancel"
+        onConfirm={performDelete} onCancel={() => setConfirmModal({ isOpen: false, id: null })}
+        confirmText="Delete" cancelText="Cancel"
       />
 
       <FloatingActionBar
-        isVisible={isBatchSupportedTab && isDirty}
-        dirtyCount={dirtyCount}
-        onDiscard={discard}
-        onSave={handleBatchSave}
-        isSaving={isSaving}
+        isVisible={isBatchSupportedTab && isDirty} dirtyCount={dirtyCount}
+        onDiscard={discard} onSave={handleBatchSave} isSaving={isSaving}
       />
     </div>
   );
