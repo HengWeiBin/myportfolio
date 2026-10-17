@@ -424,13 +424,20 @@ test.describe('Admin Panel', () => {
       await expect(tierSelect).toBeVisible();
       projectsList[0].tier = 'foundation';
       await tierSelect.selectOption('foundation');
-      await expect(page.getByText(/Updated successfully/i)).toBeVisible();
+
+      const floatingBar = page.getByTestId('floating-action-bar');
+      await expect(floatingBar).toBeVisible();
+      await expect(floatingBar).toContainText('1 item modified');
 
       // Test sort order controls (Move Up / Down)
       const moveUpBtn = page.locator('button[title="Move Up (Decrease sort_order)"]').first();
       projectsList[0].sort_order = 0;
       await moveUpBtn.click();
-      await expect(page.getByText(/Updated successfully/i)).toBeVisible();
+
+      // Save staged changes via Floating Action Bar
+      await floatingBar.getByRole('button', { name: 'Save Changes' }).click();
+      await expect(page.getByText(/Changes saved successfully/i)).toBeVisible();
+      await expect(floatingBar).not.toBeVisible();
     });
 
     test('Certificates tab with instant tier selector and sort controls', async ({ page }) => {
@@ -453,13 +460,19 @@ test.describe('Admin Panel', () => {
       const certTierSelect = page.locator('select[aria-label="Tier for Deep Learning Specialization"]');
       certificatesList[0].tier = 'featured';
       await certTierSelect.selectOption('featured');
-      await expect(page.getByText(/Updated successfully/i)).toBeVisible();
+
+      const floatingBar = page.getByTestId('floating-action-bar');
+      await expect(floatingBar).toBeVisible();
 
       // Sort order down button
       const moveDownBtn = page.locator('button[title="Move Down"]').first();
       certificatesList[0].sort_order = 1;
       await moveDownBtn.click();
-      await expect(page.getByText(/Updated successfully/i)).toBeVisible();
+
+      // Save staged changes via Floating Action Bar
+      await floatingBar.getByRole('button', { name: 'Save Changes' }).click();
+      await expect(page.getByText(/Changes saved successfully/i)).toBeVisible();
+      await expect(floatingBar).not.toBeVisible();
     });
 
     test('Skills tab displays categorized technical capabilities', async ({ page }) => {
@@ -523,6 +536,364 @@ test.describe('Admin Panel', () => {
       const exportBtn = page.locator('button:has-text("Export as Scripted Demo")').first();
       await exportBtn.click();
       await expect(page.getByText(/Exported as Scripted Demo/i)).toBeVisible();
+    });
+  });
+
+  test.describe('Batch Save, Staging & Navigation Guards', () => {
+    test.beforeEach(async ({ page }) => {
+      projectsList = [
+        {
+          id: 10,
+          title: 'Perception Model A',
+          description: 'Radar and LiDAR perception',
+          link: 'https://example.com/a',
+          tier: 'featured',
+          sort_order: 0,
+        },
+        {
+          id: 20,
+          title: 'Inference Pipeline B',
+          description: 'High throughput pipeline',
+          link: 'https://example.com/b',
+          tier: 'standard',
+          sort_order: 1,
+        },
+        {
+          id: 30,
+          title: 'Edge Deployment C',
+          description: 'Embedded runtime model',
+          link: 'https://example.com/c',
+          tier: 'foundation',
+          sort_order: 2,
+        }
+      ];
+
+      certificatesList = [
+        {
+          id: 201,
+          title: 'Deep Learning Specialization',
+          issuer: 'DeepLearning.AI',
+          date: '2024-01-15',
+          credential_id: 'CERT-12345',
+          category: 'Certificate',
+          tier: 'standard',
+          sort_order: 0
+        }
+      ];
+
+      experienceList = [
+        {
+          id: 301,
+          role: 'Machine Learning Engineer',
+          company: 'Autonomous Systems Inc.',
+          date_range: '2023 - Present',
+          description: 'Designed radar perception pipelines',
+          sort_order: 0
+        }
+      ];
+
+      // Login to reach the dashboard
+      await page.goto('/admin/login');
+      await page.fill('input[type="email"]', ADMIN_CREDENTIALS.email);
+      await page.fill('input[type="password"]', ADMIN_CREDENTIALS.password);
+      await page.click('button:has-text("LOGIN")');
+      await expect(page.getByText('Control Panel')).toBeVisible();
+      await expect(page.getByText('Projects Management')).toBeVisible();
+    });
+
+    test('Staging: modifying Tier or clicking sort buttons updates the DOM immediately with ZERO network requests', async ({ page }) => {
+      let crudCalls = 0;
+      await page.route('**/api/admin/crud', async (route) => {
+        crudCalls++;
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ success: true, result: [] })
+        });
+      });
+
+      // Modify tier for Perception Model A
+      const tierSelect = page.locator('select[aria-label="Tier for Perception Model A"]');
+      await tierSelect.selectOption('archive');
+      await expect(tierSelect).toHaveValue('archive');
+
+      // Click Move Down for Perception Model A
+      const moveDownBtn = page.locator('tr:has-text("Perception Model A") button[title="Move Down (Increase sort_order)"]');
+      await moveDownBtn.click();
+
+      // Check DOM reordered immediately: Inference Pipeline B should now appear before Perception Model A
+      const rows = page.locator('tbody tr');
+      await expect(rows.nth(0)).toContainText('Inference Pipeline B');
+      await expect(rows.nth(1)).toContainText('Perception Model A');
+
+      // Zero mutation requests should have been sent to /api/admin/crud
+      expect(crudCalls).toBe(0);
+    });
+
+    test('Floating Action Bar: appears when dirty, displays correct count, and shows row dirty indicator', async ({ page }) => {
+      const floatingBar = page.getByTestId('floating-action-bar');
+      await expect(floatingBar).not.toBeVisible();
+
+      // Initially no dirty rows
+      await expect(page.locator('tr[data-dirty="true"]')).toHaveCount(0);
+
+      // Modify 1 item: change tier of Perception Model A
+      const tierSelectA = page.locator('select[aria-label="Tier for Perception Model A"]');
+      await tierSelectA.selectOption('standard');
+
+      // Floating bar appears with 1 item modified
+      await expect(floatingBar).toBeVisible();
+      await expect(floatingBar).toContainText('1 item modified');
+
+      // Verify row dirty indicator on Perception Model A row
+      const rowA = page.locator('tr:has-text("Perception Model A")');
+      await expect(rowA).toHaveAttribute('data-dirty', 'true');
+      await expect(rowA.getByTestId('dirty-indicator')).toBeVisible();
+
+      // Other row remains not dirty
+      const rowB = page.locator('tr:has-text("Inference Pipeline B")');
+      await expect(rowB).not.toHaveAttribute('data-dirty', 'true');
+      await expect(rowB.getByTestId('dirty-indicator')).not.toBeVisible();
+
+      // Modify a second item: change tier of Inference Pipeline B
+      const tierSelectB = page.locator('select[aria-label="Tier for Inference Pipeline B"]');
+      await tierSelectB.selectOption('featured');
+
+      // Floating bar updates to 2 items modified
+      await expect(floatingBar).toContainText('2 items modified');
+      await expect(rowB).toHaveAttribute('data-dirty', 'true');
+      await expect(rowB.getByTestId('dirty-indicator')).toBeVisible();
+    });
+
+    test('Discard: clicking Discard resets items to original order/tier and hides floating bar without contacting backend', async ({ page }) => {
+      let crudCalls = 0;
+      await page.route('**/api/admin/crud', async (route) => {
+        crudCalls++;
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ success: true, result: [] })
+        });
+      });
+
+      const floatingBar = page.getByTestId('floating-action-bar');
+      const tierSelectA = page.locator('select[aria-label="Tier for Perception Model A"]');
+
+      // Make dirty changes: change tier and swap order
+      await tierSelectA.selectOption('archive');
+      const moveDownBtn = page.locator('tr:has-text("Perception Model A") button[title="Move Down (Increase sort_order)"]');
+      await moveDownBtn.click();
+
+      // Verify dirty state
+      await expect(floatingBar).toBeVisible();
+      const rows = page.locator('tbody tr');
+      await expect(rows.nth(0)).toContainText('Inference Pipeline B');
+
+      // Click Discard
+      const discardBtn = floatingBar.getByRole('button', { name: 'Discard' });
+      await discardBtn.click();
+
+      // Floating bar hides
+      await expect(floatingBar).not.toBeVisible();
+
+      // Ordering is restored to original
+      await expect(rows.nth(0)).toContainText('Perception Model A');
+      await expect(rows.nth(1)).toContainText('Inference Pipeline B');
+
+      // Tier value is restored
+      await expect(tierSelectA).toHaveValue('featured');
+
+      // Dirty indicators are gone
+      await expect(page.locator('tr[data-dirty="true"]')).toHaveCount(0);
+
+      // Backend was never contacted
+      expect(crudCalls).toBe(0);
+    });
+
+    test('Batch Save: clicking Save Changes dispatches /api/admin/crud only for dirty items in parallel, displays toast, and dismisses bar', async ({ page }) => {
+      const crudRequests = [];
+      await page.route('**/api/admin/crud', async (route) => {
+        const body = route.request().postDataJSON() || {};
+        crudRequests.push(body);
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ success: true, result: [body.data || {}] })
+        });
+      });
+
+      const floatingBar = page.getByTestId('floating-action-bar');
+
+      // Modify only Perception Model A (id: 10)
+      const tierSelectA = page.locator('select[aria-label="Tier for Perception Model A"]');
+      await tierSelectA.selectOption('archive');
+
+      await expect(floatingBar).toBeVisible();
+      await expect(floatingBar).toContainText('1 item modified');
+
+      // Click Save Changes
+      const saveBtn = floatingBar.getByRole('button', { name: 'Save Changes' });
+      await saveBtn.click();
+
+      // Success toast appears
+      await expect(page.getByText('Changes saved successfully')).toBeVisible();
+
+      // Floating bar dismisses
+      await expect(floatingBar).not.toBeVisible();
+
+      // Dirty indicators cleared
+      await expect(page.locator('tr[data-dirty="true"]')).toHaveCount(0);
+
+      // Only 1 update request sent to /api/admin/crud (diff-only)
+      expect(crudRequests.length).toBe(1);
+      expect(crudRequests[0].id).toBe(10);
+      expect(crudRequests[0].data.tier).toBe('archive');
+    });
+
+    test('Tab Switching Navigation Guard: Cancel closes modal, remains on current tab with dirty state intact', async ({ page }) => {
+      const floatingBar = page.getByTestId('floating-action-bar');
+      const guardModal = page.getByTestId('unsaved-changes-modal');
+
+      // Modify tier to create dirty state
+      const tierSelectA = page.locator('select[aria-label="Tier for Perception Model A"]');
+      await tierSelectA.selectOption('archive');
+      await expect(floatingBar).toBeVisible();
+
+      // Attempt to switch to Certificates tab
+      await page.click('button:has-text("Certificates")');
+
+      // Guard modal is shown
+      await expect(guardModal).toBeVisible();
+      await expect(guardModal).toContainText('Unsaved Changes');
+
+      // Click Cancel
+      await guardModal.getByRole('button', { name: 'Cancel' }).click();
+
+      // Modal closed, still on Projects tab
+      await expect(guardModal).not.toBeVisible();
+      await expect(page.getByText('Projects Management')).toBeVisible();
+      await expect(page.getByText('Certificates Management')).not.toBeVisible();
+
+      // Staged changes remain intact and floating bar is still visible
+      await expect(floatingBar).toBeVisible();
+      await expect(tierSelectA).toHaveValue('archive');
+    });
+
+    test('Tab Switching Navigation Guard: Discard & Proceed discards changes and switches to target tab', async ({ page }) => {
+      const floatingBar = page.getByTestId('floating-action-bar');
+      const guardModal = page.getByTestId('unsaved-changes-modal');
+
+      // Modify tier to create dirty state
+      const tierSelectA = page.locator('select[aria-label="Tier for Perception Model A"]');
+      await tierSelectA.selectOption('archive');
+      await expect(floatingBar).toBeVisible();
+
+      // Attempt to switch to Certificates tab
+      await page.click('button:has-text("Certificates")');
+      await expect(guardModal).toBeVisible();
+
+      // Click Discard & Proceed
+      await guardModal.getByRole('button', { name: 'Discard & Proceed' }).click();
+
+      // Guard modal closes and active tab transitions to Certificates
+      await expect(guardModal).not.toBeVisible();
+      await expect(page.getByText('Certificates Management')).toBeVisible();
+
+      // Switch back to Projects tab and verify changes were discarded
+      await page.click('button:has-text("Projects")');
+      await expect(page.getByText('Projects Management')).toBeVisible();
+      await expect(floatingBar).not.toBeVisible();
+      await expect(page.locator('select[aria-label="Tier for Perception Model A"]')).toHaveValue('featured');
+    });
+
+    test('Tab Switching Navigation Guard: Save & Proceed batch saves changes and switches to target tab', async ({ page }) => {
+      const crudRequests = [];
+      await page.route('**/api/admin/crud', async (route) => {
+        const body = route.request().postDataJSON() || {};
+        crudRequests.push(body);
+        if (body.id && body.data) {
+          const item = projectsList.find((p) => p.id === body.id);
+          if (item) Object.assign(item, body.data);
+        }
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({ success: true, result: [body.data || {}] })
+        });
+      });
+
+      const floatingBar = page.getByTestId('floating-action-bar');
+      const guardModal = page.getByTestId('unsaved-changes-modal');
+
+      // Modify tier to create dirty state
+      const tierSelectA = page.locator('select[aria-label="Tier for Perception Model A"]');
+      await tierSelectA.selectOption('archive');
+      await expect(floatingBar).toBeVisible();
+
+      // Attempt to switch to Certificates tab
+      await page.click('button:has-text("Certificates")');
+      await expect(guardModal).toBeVisible();
+
+      // Click Save & Proceed
+      await guardModal.getByRole('button', { name: 'Save & Proceed' }).click();
+
+      // Toast appears, modal closes, and tab transitions
+      await expect(page.getByText('Changes saved successfully')).toBeVisible();
+      await expect(guardModal).not.toBeVisible();
+      await expect(page.getByText('Certificates Management')).toBeVisible();
+
+      // Verify batch save called backend
+      expect(crudRequests.length).toBe(1);
+      expect(crudRequests[0].id).toBe(10);
+      expect(crudRequests[0].data.tier).toBe('archive');
+
+      // Switch back to Projects tab and verify changes persisted without floating bar
+      await page.click('button:has-text("Projects")');
+      await expect(page.getByText('Projects Management')).toBeVisible();
+      await expect(floatingBar).not.toBeVisible();
+      await expect(page.locator('select[aria-label="Tier for Perception Model A"]')).toHaveValue('archive');
+    });
+
+    test('Modal Action Collision Guard: clicking + New Entry, Edit, or Delete displays UnsavedChangesModal', async ({ page }) => {
+      const floatingBar = page.getByTestId('floating-action-bar');
+      const guardModal = page.getByTestId('unsaved-changes-modal');
+
+      // Modify tier to enter dirty state
+      const tierSelectA = page.locator('select[aria-label="Tier for Perception Model A"]');
+      await tierSelectA.selectOption('archive');
+      await expect(floatingBar).toBeVisible();
+
+      // 1. Try clicking "+ New Entry"
+      await page.click('button:has-text("+ New Entry")');
+      await expect(guardModal).toBeVisible();
+      await expect(page.getByText('Add Projects')).not.toBeVisible();
+
+      // Cancel collision guard
+      await guardModal.getByRole('button', { name: 'Cancel' }).click();
+      await expect(guardModal).not.toBeVisible();
+      await expect(page.getByText('Add Projects')).not.toBeVisible();
+
+      // 2. Try clicking "Edit" on a row
+      const rowA = page.locator('tr:has-text("Perception Model A")');
+      await rowA.getByRole('button', { name: 'Edit' }).click();
+      await expect(guardModal).toBeVisible();
+      await expect(page.getByText('Edit Projects')).not.toBeVisible();
+
+      // Cancel collision guard
+      await guardModal.getByRole('button', { name: 'Cancel' }).click();
+      await expect(guardModal).not.toBeVisible();
+      await expect(page.getByText('Edit Projects')).not.toBeVisible();
+
+      // 3. Try clicking "Delete" on a row
+      await rowA.getByRole('button', { name: 'Delete' }).click();
+      await expect(guardModal).toBeVisible();
+      await expect(page.getByText('Delete Item')).not.toBeVisible();
+
+      // Cancel collision guard
+      await guardModal.getByRole('button', { name: 'Cancel' }).click();
+      await expect(guardModal).not.toBeVisible();
+      await expect(page.getByText('Delete Item')).not.toBeVisible();
+      await expect(floatingBar).toBeVisible();
     });
   });
 });
