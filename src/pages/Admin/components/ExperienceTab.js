@@ -14,15 +14,34 @@ const ExperienceTab = ({
   onEdit,
   onDelete,
   onUpdateExperience,
+  stagedData,
+  onMoveUp,
+  onMoveDown,
+  onUpdateField,
+  isItemDirty,
 }) => {
-  const sortedExperience = useMemo(() => {
-    return [...data].sort((a, b) => (Number(a.sort_order) || 0) - (Number(b.sort_order) || 0));
-  }, [data]);
+  const displayExperience = stagedData || data;
 
-  const handleOrderChange = (item, delta) => {
-    if (onUpdateExperience) {
+  const sortedExperience = useMemo(() => {
+    return [...displayExperience].sort((a, b) => (Number(a.sort_order) || 0) - (Number(b.sort_order) || 0));
+  }, [displayExperience]);
+
+  const handleMoveUp = (item) => {
+    if (onMoveUp) {
+      onMoveUp(item.id);
+    } else if (onUpdateExperience) {
       const currentOrder = Number(item.sort_order) || 0;
-      const nextOrder = Math.max(0, currentOrder + delta);
+      const nextOrder = Math.max(0, currentOrder - 1);
+      onUpdateExperience(item.id, { ...item, sort_order: nextOrder });
+    }
+  };
+
+  const handleMoveDown = (item) => {
+    if (onMoveDown) {
+      onMoveDown(item.id);
+    } else if (onUpdateExperience) {
+      const currentOrder = Number(item.sort_order) || 0;
+      const nextOrder = Math.max(0, currentOrder + 1);
       onUpdateExperience(item.id, { ...item, sort_order: nextOrder });
     }
   };
@@ -34,7 +53,7 @@ const ExperienceTab = ({
         <div>
           <h2 className="text-lg font-mono font-bold text-cyan-electric tracking-wide flex items-center gap-2">
             <span>Experience Management</span>
-            <span className="text-xs font-mono font-normal text-slate-400">({data.length})</span>
+            <span className="text-xs font-mono font-normal text-slate-400">({displayExperience.length})</span>
           </h2>
           <p className="text-xs font-mono text-slate-400 mt-0.5">
             Manage research roles, timeline positions, and markdown descriptions
@@ -63,46 +82,62 @@ const ExperienceTab = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-cyber-border">
-              {sortedExperience.map((item) => (
-                <tr
-                  key={item.id}
-                  className="hover:bg-white/[0.02] transition-colors group"
-                >
-                  <td className="py-3 px-4">
-                    <div className="font-bold text-slate-100 text-sm">{item.role}</div>
-                    {item.description && (
-                      <div className="text-slate-400 text-[11px] truncate max-w-sm mt-0.5">
-                        {item.description}
+              {sortedExperience.map((item) => {
+                const isDirty = Boolean(isItemDirty && isItemDirty(item.id));
+                return (
+                  <tr
+                    key={item.id}
+                    data-dirty={isDirty ? 'true' : undefined}
+                    className={`transition-colors group ${
+                      isDirty
+                        ? 'border-l-2 border-l-cyan-electric bg-cyan-950/25 hover:bg-cyan-950/35'
+                        : 'hover:bg-white/[0.02]'
+                    }`}
+                  >
+                    <td className="py-3 px-4">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-slate-100 text-sm">{item.role}</span>
+                        {isDirty && (
+                          <span
+                            data-testid="dirty-indicator"
+                            title="Unsaved changes"
+                            className="inline-block w-2 h-2 rounded-full bg-cyan-electric shadow-[0_0_8px_rgba(0,240,255,0.8)] shrink-0 animate-pulse"
+                          />
+                        )}
                       </div>
-                    )}
-                  </td>
-                  <td className="py-3 px-3 text-slate-300">
-                    <div>{item.company}</div>
-                    <div className="text-slate-500 text-[11px]">{item.date_range || 'Ongoing'}</div>
-                  </td>
-                  <td className="py-3 px-3 text-center">
-                    <div className="inline-flex items-center gap-1 bg-cyber-card px-2 py-1 rounded border border-cyber-border">
-                      <button
-                        type="button"
-                        title="Move Up"
-                        onClick={() => handleOrderChange(item, -1)}
-                        className="text-slate-400 hover:text-cyan-electric px-1"
-                      >
-                        ▲
-                      </button>
-                      <span className="w-6 text-center font-bold text-slate-200">
-                        {item.sort_order ?? 0}
-                      </span>
-                      <button
-                        type="button"
-                        title="Move Down"
-                        onClick={() => handleOrderChange(item, 1)}
-                        className="text-slate-400 hover:text-cyan-electric px-1"
-                      >
-                        ▼
-                      </button>
-                    </div>
-                  </td>
+                      {item.description && (
+                        <div className="text-slate-400 text-[11px] truncate max-w-sm mt-0.5">
+                          {item.description}
+                        </div>
+                      )}
+                    </td>
+                    <td className="py-3 px-3 text-slate-300">
+                      <div>{item.company}</div>
+                      <div className="text-slate-500 text-[11px]">{item.date_range || 'Ongoing'}</div>
+                    </td>
+                    <td className="py-3 px-3 text-center">
+                      <div className="inline-flex items-center gap-1 bg-cyber-card px-2 py-1 rounded border border-cyber-border">
+                        <button
+                          type="button"
+                          title="Move Up"
+                          onClick={() => handleMoveUp(item)}
+                          className="text-slate-400 hover:text-cyan-electric px-1"
+                        >
+                          ▲
+                        </button>
+                        <span className="w-6 text-center font-bold text-slate-200">
+                          {item.sort_order ?? 0}
+                        </span>
+                        <button
+                          type="button"
+                          title="Move Down"
+                          onClick={() => handleMoveDown(item)}
+                          className="text-slate-400 hover:text-cyan-electric px-1"
+                        >
+                          ▼
+                        </button>
+                      </div>
+                    </td>
                   <td className="py-3 px-4 text-right whitespace-nowrap">
                     <AdminButton
                       size="sm"
@@ -121,8 +156,9 @@ const ExperienceTab = ({
                     </AdminButton>
                   </td>
                 </tr>
-              ))}
-            </tbody>
+              );
+            })}
+          </tbody>
           </table>
         </div>
       )}

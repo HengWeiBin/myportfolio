@@ -9,6 +9,8 @@ import {
 } from '../../services/api';
 import { uploadImageToR2, deleteImageFromR2 } from '../../services/upload';
 import ConfirmModal from '../../components/Common/ConfirmModal';
+import { FloatingActionBar } from './components/Shared';
+import useStagedList from './hooks/useStagedList';
 import ProjectsTab from './components/ProjectsTab';
 import ProjectModal from './components/ProjectModal';
 import CertificatesTab from './components/CertificatesTab';
@@ -32,6 +34,26 @@ const Dashboard = () => {
   const [isEdit, setIsEdit] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [confirmModal, setConfirmModal] = useState({ isOpen: false, id: null });
+  const [isSaving, setIsSaving] = useState(false);
+
+  const isBatchSupportedTab = ['projects', 'certificates', 'experience'].includes(activeTab);
+
+  const {
+    stagedData, isDirty, dirtyCount, isItemDirty,
+    discard, commit, moveUp, moveDown, updateField,
+  } = useStagedList(isBatchSupportedTab ? data : []);
+
+  const handleBatchSave = async () => {
+    setIsSaving(true);
+    try {
+      commit();
+      toast.success('Changes saved successfully');
+    } catch (e) {
+      toast.error('Failed to save changes: ' + e.message);
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const fetchData = useCallback(async () => {
     if (activeTab === 'agent') {
@@ -150,23 +172,26 @@ const Dashboard = () => {
       <div className="bg-cyber-card/40 border border-cyber-border rounded-lg p-5">
         {activeTab === 'projects' && (
           <ProjectsTab
-            data={data} loading={loading} onAdd={handleOpenAdd}
+            data={data} stagedData={stagedData} loading={loading} onAdd={handleOpenAdd}
             onEdit={handleOpenEdit} onDelete={(id) => setConfirmModal({ isOpen: true, id })}
-            onUpdateProject={handleUpdateItem}
+            onUpdateProject={handleUpdateItem} onMoveUp={moveUp} onMoveDown={moveDown}
+            onUpdateField={updateField} isItemDirty={isItemDirty}
           />
         )}
         {activeTab === 'certificates' && (
           <CertificatesTab
-            data={data} loading={loading} onAdd={handleOpenAdd}
+            data={data} stagedData={stagedData} loading={loading} onAdd={handleOpenAdd}
             onEdit={handleOpenEdit} onDelete={(id) => setConfirmModal({ isOpen: true, id })}
-            onUpdateCertificate={handleUpdateItem}
+            onUpdateCertificate={handleUpdateItem} onMoveUp={moveUp} onMoveDown={moveDown}
+            onUpdateField={updateField} isItemDirty={isItemDirty}
           />
         )}
         {activeTab === 'experience' && (
           <ExperienceTab
-            data={data} loading={loading} onAdd={handleOpenAdd}
+            data={data} stagedData={stagedData} loading={loading} onAdd={handleOpenAdd}
             onEdit={handleOpenEdit} onDelete={(id) => setConfirmModal({ isOpen: true, id })}
-            onUpdateExperience={handleUpdateItem}
+            onUpdateExperience={handleUpdateItem} onMoveUp={moveUp} onMoveDown={moveDown}
+            onUpdateField={updateField} isItemDirty={isItemDirty}
           />
         )}
         {activeTab === 'skills' && (
@@ -204,6 +229,14 @@ const Dashboard = () => {
         onCancel={() => setConfirmModal({ isOpen: false, id: null })}
         confirmText="Delete"
         cancelText="Cancel"
+      />
+
+      <FloatingActionBar
+        isVisible={isBatchSupportedTab && isDirty}
+        dirtyCount={dirtyCount}
+        onDiscard={discard}
+        onSave={handleBatchSave}
+        isSaving={isSaving}
       />
     </div>
   );

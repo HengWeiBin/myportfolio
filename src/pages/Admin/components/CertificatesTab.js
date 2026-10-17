@@ -14,21 +14,42 @@ const CertificatesTab = ({
   onEdit,
   onDelete,
   onUpdateCertificate,
+  stagedData,
+  onMoveUp,
+  onMoveDown,
+  onUpdateField,
+  isItemDirty,
 }) => {
+  const displayCertificates = stagedData || data;
+
   const sortedCertificates = useMemo(() => {
-    return [...data].sort((a, b) => (Number(a.sort_order) || 0) - (Number(b.sort_order) || 0));
-  }, [data]);
+    return [...displayCertificates].sort((a, b) => (Number(a.sort_order) || 0) - (Number(b.sort_order) || 0));
+  }, [displayCertificates]);
 
   const handleTierChange = (cert, newTier) => {
-    if (onUpdateCertificate) {
+    if (onUpdateField) {
+      onUpdateField(cert.id, 'tier', newTier);
+    } else if (onUpdateCertificate) {
       onUpdateCertificate(cert.id, { ...cert, tier: newTier });
     }
   };
 
-  const handleOrderChange = (cert, delta) => {
-    if (onUpdateCertificate) {
+  const handleMoveUp = (cert) => {
+    if (onMoveUp) {
+      onMoveUp(cert.id);
+    } else if (onUpdateCertificate) {
       const currentOrder = Number(cert.sort_order) || 0;
-      const nextOrder = Math.max(0, currentOrder + delta);
+      const nextOrder = Math.max(0, currentOrder - 1);
+      onUpdateCertificate(cert.id, { ...cert, sort_order: nextOrder });
+    }
+  };
+
+  const handleMoveDown = (cert) => {
+    if (onMoveDown) {
+      onMoveDown(cert.id);
+    } else if (onUpdateCertificate) {
+      const currentOrder = Number(cert.sort_order) || 0;
+      const nextOrder = Math.max(0, currentOrder + 1);
       onUpdateCertificate(cert.id, { ...cert, sort_order: nextOrder });
     }
   };
@@ -40,7 +61,7 @@ const CertificatesTab = ({
         <div>
           <h2 className="text-lg font-mono font-bold text-cyan-electric tracking-wide flex items-center gap-2">
             <span>Certificates Management</span>
-            <span className="text-xs font-mono font-normal text-slate-400">({data.length})</span>
+            <span className="text-xs font-mono font-normal text-slate-400">({displayCertificates.length})</span>
           </h2>
           <p className="text-xs font-mono text-slate-400 mt-0.5">
             Organize credentials, categories, tier visibility, and priority order
@@ -71,67 +92,83 @@ const CertificatesTab = ({
               </tr>
             </thead>
             <tbody className="divide-y divide-cyber-border">
-              {sortedCertificates.map((item) => (
-                <tr
-                  key={item.id}
-                  className="hover:bg-white/[0.02] transition-colors group"
-                >
-                  <td className="py-3 px-4">
-                    <div className="font-bold text-slate-100 text-sm">{item.title}</div>
-                    {item.credential_id && (
-                      <div className="text-slate-400 text-[11px] font-mono mt-0.5">
-                        ID: {item.credential_id}
+              {sortedCertificates.map((item) => {
+                const isDirty = Boolean(isItemDirty && isItemDirty(item.id));
+                return (
+                  <tr
+                    key={item.id}
+                    data-dirty={isDirty ? 'true' : undefined}
+                    className={`transition-colors group ${
+                      isDirty
+                        ? 'border-l-2 border-l-cyan-electric bg-cyan-950/25 hover:bg-cyan-950/35'
+                        : 'hover:bg-white/[0.02]'
+                    }`}
+                  >
+                    <td className="py-3 px-4">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-slate-100 text-sm">{item.title}</span>
+                        {isDirty && (
+                          <span
+                            data-testid="dirty-indicator"
+                            title="Unsaved changes"
+                            className="inline-block w-2 h-2 rounded-full bg-cyan-electric shadow-[0_0_8px_rgba(0,240,255,0.8)] shrink-0 animate-pulse"
+                          />
+                        )}
                       </div>
-                    )}
-                  </td>
-                  <td className="py-3 px-3 text-slate-300">
-                    <div>{item.issuer || 'N/A'}</div>
-                    <div className="text-slate-500 text-[11px]">{item.date || 'No Date'}</div>
-                  </td>
-                  <td className="py-3 px-3">
-                    <span className="inline-block px-2 py-0.5 rounded text-[11px] font-mono bg-cyber-panel text-slate-300 border border-cyber-border">
-                      {item.category || 'Certificate'}
-                    </span>
-                  </td>
-                  <td className="py-3 px-3">
-                    <div className="flex items-center gap-2">
-                      <select
-                        aria-label={`Tier for ${item.title}`}
-                        value={item.tier || 'standard'}
-                        onChange={(e) => handleTierChange(item, e.target.value)}
-                        className="bg-cyber-card border border-cyber-border rounded px-2 py-1 text-xs text-slate-200 font-mono focus:border-cyan-electric focus:outline-none"
-                      >
-                        <option value="featured">Featured</option>
-                        <option value="standard">Standard</option>
-                        <option value="foundation">Foundation</option>
-                        <option value="archive">Archive</option>
-                      </select>
-                      <TierBadge tier={item.tier} />
-                    </div>
-                  </td>
-                  <td className="py-3 px-3 text-center">
-                    <div className="inline-flex items-center gap-1 bg-cyber-card px-2 py-1 rounded border border-cyber-border">
-                      <button
-                        type="button"
-                        title="Move Up"
-                        onClick={() => handleOrderChange(item, -1)}
-                        className="text-slate-400 hover:text-cyan-electric px-1"
-                      >
-                        ▲
-                      </button>
-                      <span className="w-6 text-center font-bold text-slate-200">
-                        {item.sort_order ?? 0}
+                      {item.credential_id && (
+                        <div className="text-slate-400 text-[11px] font-mono mt-0.5">
+                          ID: {item.credential_id}
+                        </div>
+                      )}
+                    </td>
+                    <td className="py-3 px-3 text-slate-300">
+                      <div>{item.issuer || 'N/A'}</div>
+                      <div className="text-slate-500 text-[11px]">{item.date || 'No Date'}</div>
+                    </td>
+                    <td className="py-3 px-3">
+                      <span className="inline-block px-2 py-0.5 rounded text-[11px] font-mono bg-cyber-panel text-slate-300 border border-cyber-border">
+                        {item.category || 'Certificate'}
                       </span>
-                      <button
-                        type="button"
-                        title="Move Down"
-                        onClick={() => handleOrderChange(item, 1)}
-                        className="text-slate-400 hover:text-cyan-electric px-1"
-                      >
-                        ▼
-                      </button>
-                    </div>
-                  </td>
+                    </td>
+                    <td className="py-3 px-3">
+                      <div className="flex items-center gap-2">
+                        <select
+                          aria-label={`Tier for ${item.title}`}
+                          value={item.tier || 'standard'}
+                          onChange={(e) => handleTierChange(item, e.target.value)}
+                          className="bg-cyber-card border border-cyber-border rounded px-2 py-1 text-xs text-slate-200 font-mono focus:border-cyan-electric focus:outline-none"
+                        >
+                          <option value="featured">Featured</option>
+                          <option value="standard">Standard</option>
+                          <option value="foundation">Foundation</option>
+                          <option value="archive">Archive</option>
+                        </select>
+                        <TierBadge tier={item.tier} />
+                      </div>
+                    </td>
+                    <td className="py-3 px-3 text-center">
+                      <div className="inline-flex items-center gap-1 bg-cyber-card px-2 py-1 rounded border border-cyber-border">
+                        <button
+                          type="button"
+                          title="Move Up"
+                          onClick={() => handleMoveUp(item)}
+                          className="text-slate-400 hover:text-cyan-electric px-1"
+                        >
+                          ▲
+                        </button>
+                        <span className="w-6 text-center font-bold text-slate-200">
+                          {item.sort_order ?? 0}
+                        </span>
+                        <button
+                          type="button"
+                          title="Move Down"
+                          onClick={() => handleMoveDown(item)}
+                          className="text-slate-400 hover:text-cyan-electric px-1"
+                        >
+                          ▼
+                        </button>
+                      </div>
+                    </td>
                   <td className="py-3 px-4 text-right whitespace-nowrap">
                     <AdminButton
                       size="sm"
@@ -150,8 +187,9 @@ const CertificatesTab = ({
                     </AdminButton>
                   </td>
                 </tr>
-              ))}
-            </tbody>
+              );
+            })}
+          </tbody>
           </table>
         </div>
       )}
