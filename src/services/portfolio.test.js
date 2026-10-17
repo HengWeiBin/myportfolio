@@ -275,6 +275,77 @@ describe('Netlify Function: GET /api/portfolio', () => {
     expect(res.body).not.toContain('port 5432');
   });
 
+  it('gracefully falls back to legacy columns when new schema columns do not exist yet', async () => {
+    const legacyProject = {
+      id: 1,
+      title: 'Legacy CenterFusion',
+      description: 'Legacy description',
+      link: 'https://example.com/legacy',
+      date_start: '2022-01',
+      date_end: '2022-08',
+      image_url: 'https://pub-r2.dev/projects/legacy.jpg',
+      tags: ['PyTorch']
+    };
+    const legacyExperience = {
+      id: 1,
+      role: 'ML Engineer',
+      company: 'Tech Corp',
+      date_range: '2021 - 2022',
+      description: 'Built models',
+      tech_stack: ['Python']
+    };
+    const legacyCert = {
+      id: 1,
+      title: 'AI Cert',
+      issuer: 'DeepLearning',
+      date: '2021-05',
+      image_url: 'https://pub-r2.dev/certs/sample.jpg',
+      credential_id: 'CERT-111'
+    };
+
+    portfolioHandler.__setSql(vi.fn((strings) => {
+      const query = strings[0];
+      if (query.includes('FROM profile')) return Promise.resolve([mockProfile]);
+      if (query.includes('FROM skills')) return Promise.resolve(mockSkills);
+      if (query.includes('FROM projects')) {
+        if (query.includes('tier') || query.includes('sort_order')) {
+          return Promise.reject(new Error('column "tier" does not exist'));
+        }
+        return Promise.resolve([legacyProject]);
+      }
+      if (query.includes('FROM experience')) {
+        if (query.includes('sort_order')) {
+          return Promise.reject(new Error('column "sort_order" does not exist'));
+        }
+        return Promise.resolve([legacyExperience]);
+      }
+      if (query.includes('FROM certificates')) {
+        if (query.includes('category') || query.includes('tier')) {
+          return Promise.reject(new Error('column "category" does not exist'));
+        }
+        return Promise.resolve([legacyCert]);
+      }
+      return Promise.resolve([]);
+    }));
+
+    const res = await portfolioHandler.handler({ httpMethod: 'GET' });
+    expect(res.statusCode).toBe(200);
+    const data = JSON.parse(res.body);
+
+    expect(data.projects[0].title).toBe('Legacy CenterFusion');
+    expect(data.projects[0].tier).toBe('standard');
+    expect(data.projects[0].sort_order).toBe(0);
+    expect(data.projects[0].visual_type).toBe('image');
+    expect(data.projects[0].is_confidential).toBe(false);
+
+    expect(data.experience[0].role).toBe('ML Engineer');
+    expect(data.experience[0].sort_order).toBe(0);
+
+    expect(data.certificates[0].title).toBe('AI Cert');
+    expect(data.certificates[0].category).toBe('Certificate');
+    expect(data.certificates[0].tier).toBe('standard');
+  });
+
   it('handles missing database configuration with HTTP 500 error', async () => {
     portfolioHandler.__setSql(null);
     delete process.env.DATABASE_URL;
@@ -609,3 +680,24 @@ describe('Database Migration Runner', () => {
     expect(typeof m005.up).toBe('function');
   });
 });
+
+describe('Vite Server Proxy Configuration', () => {
+  it('correctly maps /api/admin/crud to /.netlify/functions/admin-crud before generic /api fallback', async () => {
+    const fs = await import('fs');
+    const path = await import('path');
+    const configPath = path.resolve(__dirname, '../../vite.config.js');
+    const content = fs.readFileSync(configPath, 'utf8');
+
+    // Verify /api/admin/crud proxy definition exists
+    expect(content).toContain("'/api/admin/crud'");
+    expect(content).toContain("rewrite: () => '/.netlify/functions/admin-crud'");
+
+    // Verify proxy ordering: /api/admin/crud must appear before generic '/api' fallback
+    const crudIndex = content.indexOf("'/api/admin/crud':");
+    const apiIndex = content.indexOf("'/api':");
+    expect(crudIndex).toBeGreaterThan(-1);
+    expect(apiIndex).toBeGreaterThan(-1);
+    expect(crudIndex).toBeLessThan(apiIndex);
+  });
+});
+
