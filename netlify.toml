@@ -4,6 +4,7 @@
   functions = "netlify/functions"
 
 [dev]
+  framework = "vite"
   command = "npm run start"
   targetPort = 3000
   port = 8888
@@ -56,10 +57,3 @@
   from = "/api/admin/conversations"
   to = "/.netlify/functions/admin-agent?action=conversations"
   status = 200
-
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
-
-

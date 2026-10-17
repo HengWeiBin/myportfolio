@@ -9,9 +9,19 @@ import {
 } from './api';
 
 describe('Admin Agent Endpoints (Issue #11)', () => {
+  const originalEnv = process.env;
+
   beforeEach(() => {
+    process.env = { ...originalEnv };
+    delete process.env.NETLIFY_DATABASE_URL;
+    delete process.env.DATABASE_URL;
+    delete process.env.REACT_APP_DATABASE_URL;
     __resetState();
     vi.restoreAllMocks();
+  });
+
+  afterEach(() => {
+    process.env = originalEnv;
   });
 
   const authHeader = {

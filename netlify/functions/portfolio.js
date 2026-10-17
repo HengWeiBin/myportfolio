@@ -52,6 +52,46 @@ const isAdminRequest = (event) => {
   return false;
 };
 
+const isMissingColumnError = (err) => {
+  if (!err) return false;
+  if (err.code === '42703') return true;
+  const msg = (err.message || '').toLowerCase();
+  return msg.includes('does not exist') && msg.includes('column');
+};
+
+const fetchProjects = async (sql) => {
+  try {
+    return await sql`SELECT id, title, description, link, date_start, date_end, image_url, tags, tier, sort_order, visual_type, is_confidential, repo_visibility, metrics FROM projects ORDER BY sort_order ASC, date_end DESC`;
+  } catch (err) {
+    if (isMissingColumnError(err)) {
+      return await sql`SELECT id, title, description, link, date_start, date_end, image_url, tags FROM projects ORDER BY date_end DESC`;
+    }
+    throw err;
+  }
+};
+
+const fetchExperience = async (sql) => {
+  try {
+    return await sql`SELECT id, role, company, date_range, description, tech_stack, sort_order FROM experience ORDER BY sort_order ASC, id DESC`;
+  } catch (err) {
+    if (isMissingColumnError(err)) {
+      return await sql`SELECT id, role, company, date_range, description, tech_stack FROM experience ORDER BY id DESC`;
+    }
+    throw err;
+  }
+};
+
+const fetchCertificates = async (sql) => {
+  try {
+    return await sql`SELECT id, title, issuer, date, image_url, credential_id, category, tier, sort_order FROM certificates ORDER BY sort_order ASC, date DESC`;
+  } catch (err) {
+    if (isMissingColumnError(err)) {
+      return await sql`SELECT id, title, issuer, date, image_url, credential_id FROM certificates ORDER BY date DESC`;
+    }
+    throw err;
+  }
+};
+
 exports.handler = async (event) => {
   const origin = event.headers?.origin || event.headers?.Origin || '';
   const headers = {
@@ -101,9 +141,9 @@ exports.handler = async (event) => {
     const [profileRows, skillsRows, projectsRows, experienceRows, certificatesRows] = await Promise.all([
       sql`SELECT id, name, title, email, phone, bio, github, linkedin, instagram, facebook, resume_link FROM profile LIMIT 1`,
       sql`SELECT id, category, name FROM skills ORDER BY id ASC`,
-      sql`SELECT id, title, description, link, date_start, date_end, image_url, tags, tier, sort_order, visual_type, is_confidential, repo_visibility, metrics FROM projects ORDER BY sort_order ASC, date_end DESC`,
-      sql`SELECT id, role, company, date_range, description, tech_stack, sort_order FROM experience ORDER BY sort_order ASC, id DESC`,
-      sql`SELECT id, title, issuer, date, image_url, credential_id, category, tier, sort_order FROM certificates ORDER BY sort_order ASC, date DESC`
+      fetchProjects(sql),
+      fetchExperience(sql),
+      fetchCertificates(sql)
     ]);
 
     const isAdmin = isAdminRequest(event);

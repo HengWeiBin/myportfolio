@@ -5,7 +5,7 @@ const bcrypt = require('bcryptjs');
 require('dotenv').config();
 
 const getPool = (customConnectionString) => {
-  const connectionString = customConnectionString || process.env.DATABASE_URL || process.env.REACT_APP_DATABASE_URL;
+  const connectionString = customConnectionString || process.env.NETLIFY_DATABASE_URL || process.env.DATABASE_URL || process.env.REACT_APP_DATABASE_URL;
   if (!connectionString) {
     return null;
   }

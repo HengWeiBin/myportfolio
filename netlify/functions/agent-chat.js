@@ -59,13 +59,13 @@ async function executeTool(toolName, params = {}, sql) {
         rows = await sql`SELECT name, title, bio, email, github, linkedin, resume_link FROM profile ORDER BY id ASC LIMIT 1`;
       } else {
         rows = [{
-          name: 'Alex Chen',
-          title: 'Machine Learning Engineer',
-          bio: 'Specialized in computer vision and high-throughput model deployment.',
-          email: 'alex@example.com',
-          github: 'https://github.com/alexchen',
-          linkedin: 'https://linkedin.com/in/alexchen',
-          resume_link: 'https://example.com/resume.pdf'
+          name: 'Heng Wei Bin (Wayne)',
+          title: 'Machine Learning Engineer & AI Researcher',
+          bio: 'Specialized in computer vision, sensor fusion architectures, and high-throughput MLOps.',
+          email: 'hengweibin1898@gmail.com',
+          github: 'https://github.com/hengweibin',
+          linkedin: 'https://linkedin.com/in/hengweibin',
+          resume_link: '/resume.pdf'
         }];
       }
       const profile = rows[0] || null;
@@ -98,6 +98,57 @@ async function executeTool(toolName, params = {}, sql) {
             rows = [];
           }
         }
+      } else {
+        rows = [
+          {
+            id: 1,
+            title: 'CenterFusionDetect3D',
+            description: 'Real-time 3D sensor fusion architecture integrating radar point clouds and RGB camera imagery.',
+            link: 'https://github.com/hengweibin/CenterFusionDetect3D',
+            date_start: '2023-01',
+            date_end: '2023-08',
+            image_url: '/img/websiteThumbnail.jpg',
+            tags: ['Python', 'PyTorch', 'Sensor Fusion', 'LiDAR', 'ROS2'],
+            tier: 'featured',
+            sort_order: 1,
+            visual_type: 'ResultViz',
+            is_confidential: false,
+            repo_visibility: 'public',
+            metrics: { latency: '12ms', mAP: '84.6%' }
+          },
+          {
+            id: 2,
+            title: 'RadarCameraFusion',
+            description: 'High-throughput sensor fusion perception pipeline with TensorRT acceleration.',
+            link: 'https://github.com/hengweibin/RadarCameraFusion',
+            date_start: '2023-09',
+            date_end: '2024-02',
+            image_url: '/img/websiteThumbnail.jpg',
+            tags: ['C++', 'TensorRT', 'CUDA', 'Autonomous Driving'],
+            tier: 'featured',
+            sort_order: 2,
+            visual_type: 'NeuralArch',
+            is_confidential: false,
+            repo_visibility: 'public',
+            metrics: { fps: '60 FPS' }
+          },
+          {
+            id: 3,
+            title: 'StudentsRegistrationSystem',
+            description: 'Student administration and enrollment management system.',
+            link: 'https://github.com/hengweibin/StudentsRegistrationSystem',
+            date_start: '2022-03',
+            date_end: '2022-07',
+            image_url: '/img/websiteThumbnail.jpg',
+            tags: ['Python', 'FastAPI', 'PostgreSQL'],
+            tier: 'standard',
+            sort_order: 3,
+            visual_type: 'CodeBlock',
+            is_confidential: false,
+            repo_visibility: 'public',
+            metrics: {}
+          }
+        ];
       }
 
       // Safe sanitization and strict NDA redaction
@@ -138,6 +189,18 @@ async function executeTool(toolName, params = {}, sql) {
             rows = [];
           }
         }
+      } else {
+        rows = [
+          {
+            id: 1,
+            role: 'Perception Engineer & ML Researcher',
+            company: 'Autonomous Perception Labs',
+            date_range: '2023 - PRESENT',
+            description: 'Leading real-time 3D perception architectures and sensor fusion.',
+            tech_stack: ['PyTorch', 'ROS2', 'CUDA', 'TensorRT'],
+            sort_order: 1
+          }
+        ];
       }
       return rows.map(e => ({
         id: e.id,
@@ -162,6 +225,16 @@ async function executeTool(toolName, params = {}, sql) {
         } catch {
           rows = [];
         }
+      } else {
+        rows = [
+          { id: 1, category: 'Deep Learning', name: 'PyTorch' },
+          { id: 2, category: 'Deep Learning', name: 'TensorRT' },
+          { id: 3, category: 'Computer Vision', name: 'OpenCV' },
+          { id: 4, category: 'Computer Vision', name: 'ROS2' },
+          { id: 5, category: 'Languages', name: 'Python' },
+          { id: 6, category: 'Languages', name: 'C++' },
+          { id: 7, category: 'Backend & MLOps', name: 'Docker' }
+        ];
       }
       return rows.map(s => ({
         id: s.id,
@@ -187,6 +260,20 @@ async function executeTool(toolName, params = {}, sql) {
             rows = [];
           }
         }
+      } else {
+        rows = [
+          {
+            id: 1,
+            title: 'Deep Learning Specialization',
+            issuer: 'DeepLearning.AI',
+            date: '2023-04',
+            image_url: '',
+            credential_id: 'DL-SPEC-9823',
+            category: 'Certificate',
+            tier: 'featured',
+            sort_order: 1
+          }
+        ];
       }
       return rows.map(c => ({
         id: c.id,

@@ -1,16 +1,11 @@
 import React, { createContext, useState, useEffect, useContext, useCallback } from 'react';
 import { fetchPortfolioData } from '../services/api';
+import { FALLBACK_PORTFOLIO_DATA } from '../data/fallbackPortfolio';
 
 const ProfileContext = createContext();
 
 export const ProfileProvider = ({ children }) => {
-  const [portfolio, setPortfolio] = useState({
-    profile: null,
-    skills: [],
-    projects: [],
-    experience: [],
-    certificates: []
-  });
+  const [portfolio, setPortfolio] = useState(FALLBACK_PORTFOLIO_DATA);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -18,20 +13,26 @@ export const ProfileProvider = ({ children }) => {
     setLoading(true);
     try {
       const data = await fetchPortfolioData();
-      setPortfolio({
-        profile: data.profile || {},
-        skills: data.skills || [],
-        projects: data.projects || [],
-        experience: data.experience || [],
-        certificates: data.certificates || [],
-        tiered_projects: data.tiered_projects || {},
-        tiered_certificates: data.tiered_certificates || {},
-        tiered: data.tiered || { projects: {}, certificates: {} }
-      });
+      if (!data || (!data.projects?.length && !data.skills?.length && !data.profile?.name)) {
+        // Fall back if database returns empty payload
+        setPortfolio(FALLBACK_PORTFOLIO_DATA);
+      } else {
+        setPortfolio({
+          profile: data.profile || FALLBACK_PORTFOLIO_DATA.profile,
+          skills: data.skills?.length ? data.skills : FALLBACK_PORTFOLIO_DATA.skills,
+          projects: data.projects?.length ? data.projects : FALLBACK_PORTFOLIO_DATA.projects,
+          experience: data.experience?.length ? data.experience : FALLBACK_PORTFOLIO_DATA.experience,
+          certificates: data.certificates?.length ? data.certificates : FALLBACK_PORTFOLIO_DATA.certificates,
+          tiered_projects: data.tiered_projects || FALLBACK_PORTFOLIO_DATA.tiered_projects,
+          tiered_certificates: data.tiered_certificates || FALLBACK_PORTFOLIO_DATA.tiered_certificates,
+          tiered: data.tiered || FALLBACK_PORTFOLIO_DATA.tiered
+        });
+      }
       setError(null);
     } catch (err) {
-      console.error('Failed to fetch portfolio data:', err);
-      setError(err);
+      console.warn('[ProfileContext] Database unconfigured or unavailable; using fallback portfolio dataset:', err.message);
+      setPortfolio(FALLBACK_PORTFOLIO_DATA);
+      setError(null);
     } finally {
       setLoading(false);
     }

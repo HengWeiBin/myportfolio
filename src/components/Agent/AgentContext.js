@@ -197,7 +197,11 @@ export const AgentProvider = ({ children }) => {
 
       if (!response.ok) {
         setRateLimitReached(true);
-        setRateLimitNotice('Daily limit of 5 requests reached. Switched gracefully to scripted playback.');
+        if (response.status === 429) {
+          setRateLimitNotice('Daily limit of 5 requests reached. Switched gracefully to scripted playback.');
+        } else {
+          setRateLimitNotice('AI service offline / local mode. Switched gracefully to demo playback.');
+        }
         runScriptedPlayback(trimmed, assistantMessageId);
         return;
       }
@@ -310,7 +314,7 @@ export const AgentProvider = ({ children }) => {
     } catch (err) {
       console.warn('[AgentContext] Chat request failed, initiating scripted fallback:', err.message);
       setRateLimitReached(true);
-      setRateLimitNotice('Connection interrupted. Switched to scripted playback mode.');
+      setRateLimitNotice('AI service offline / local mode. Switched gracefully to demo playback.');
       runScriptedPlayback(trimmed, assistantMessageId);
     }
   }, [isStreaming, rateLimitReached, runScriptedPlayback, executeAction]);
