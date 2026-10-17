@@ -24,32 +24,34 @@
   --color-terminal-rose: #f43f5e;
 }
 
-/* CSS Variables for Admin compatibility & Global styling */
-:root {
-  --bg-color: #07090e;
-  --bg-dark: #05070a;
-  --text-primary: #f1f5f9;
-  --text-secondary: #94a3b8;
-  --accent: #00f0ff;
-  --accent-glow: rgba(0, 240, 255, 0.35);
-  --border-color: #1e293b;
-  --success: #10b981;
-  --warning: #f59e0b;
-  --danger: #f43f5e;
-  --primary-color: #00f0ff;
-  --font-mono: 'Fira Code', 'Courier New', monospace;
-  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
-}
+@layer base {
+  /* CSS Variables for Admin compatibility & Global styling */
+  :root {
+    --bg-color: #07090e;
+    --bg-dark: #05070a;
+    --text-primary: #f1f5f9;
+    --text-secondary: #94a3b8;
+    --accent: #00f0ff;
+    --accent-glow: rgba(0, 240, 255, 0.35);
+    --border-color: #1e293b;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #f43f5e;
+    --primary-color: #00f0ff;
+    --font-mono: 'Fira Code', 'Courier New', monospace;
+    --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  }
 
-body {
-  margin: 0;
-  font-family: var(--font-sans);
-  background-color: var(--bg-color);
-  color: var(--text-primary);
-  min-height: 100vh;
-  overflow-x: hidden;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  body {
+    margin: 0;
+    font-family: var(--font-sans);
+    background-color: var(--bg-color);
+    color: var(--text-primary);
+    min-height: 100vh;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
 }
 
 /* Glassmorphism & Panel Utilities */
