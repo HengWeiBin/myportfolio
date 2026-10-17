@@ -13,11 +13,9 @@ const ExperienceTab = ({
   onAdd,
   onEdit,
   onDelete,
-  onUpdateExperience,
   stagedData,
   onMoveUp,
   onMoveDown,
-  onUpdateField,
   isItemDirty,
 }) => {
   const displayExperience = stagedData || data;
@@ -29,20 +27,12 @@ const ExperienceTab = ({
   const handleMoveUp = (item) => {
     if (onMoveUp) {
       onMoveUp(item.id);
-    } else if (onUpdateExperience) {
-      const currentOrder = Number(item.sort_order) || 0;
-      const nextOrder = Math.max(0, currentOrder - 1);
-      onUpdateExperience(item.id, { ...item, sort_order: nextOrder });
     }
   };
 
   const handleMoveDown = (item) => {
     if (onMoveDown) {
       onMoveDown(item.id);
-    } else if (onUpdateExperience) {
-      const currentOrder = Number(item.sort_order) || 0;
-      const nextOrder = Math.max(0, currentOrder + 1);
-      onUpdateExperience(item.id, { ...item, sort_order: nextOrder });
     }
   };
 

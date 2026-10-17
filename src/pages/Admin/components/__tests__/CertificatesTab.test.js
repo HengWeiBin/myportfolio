@@ -95,22 +95,4 @@ describe('CertificatesTab', () => {
 
     expect(onUpdateField).toHaveBeenCalledWith('10', 'tier', 'featured');
   });
-
-  it('maintains backward compatibility with onUpdateCertificate when staging props are absent', () => {
-    const onUpdateCertificate = vi.fn();
-
-    render(
-      <CertificatesTab
-        data={sampleCertificates}
-        onUpdateCertificate={onUpdateCertificate}
-        onAdd={vi.fn()}
-        onEdit={vi.fn()}
-        onDelete={vi.fn()}
-      />
-    );
-
-    const moveDownButtons = screen.getAllByRole('button', { name: '▼' });
-    fireEvent.click(moveDownButtons[0]);
-    expect(onUpdateCertificate).toHaveBeenCalledWith('10', expect.objectContaining({ id: '10', sort_order: 1 }));
-  });
 });

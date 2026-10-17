@@ -405,14 +405,16 @@ describe('Dashboard Batch Save & Staging Integration', () => {
       guardModal = screen.getByTestId('unsaved-changes-modal');
       expect(guardModal).toBeInTheDocument();
 
-      // Click Discard & Proceed -> opens Edit modal
+      // Click Discard & Proceed -> opens Edit modal with pristine baseline data
       fireEvent.click(within(guardModal).getByRole('button', { name: /discard & proceed/i }));
       await waitFor(() => {
         expect(screen.getByText(/edit projects/i)).toBeInTheDocument();
       });
+      const editModal = screen.getByText(/edit projects/i).closest('.fixed');
+      expect(within(editModal).getByDisplayValue('Standard')).toBeInTheDocument();
 
       // Close modal
-      const closeBtn = screen.getByRole('button', { name: /cancel/i });
+      const closeBtn = within(editModal).getByRole('button', { name: /cancel/i });
       fireEvent.click(closeBtn);
 
       // 3. Make dirty again and click Delete

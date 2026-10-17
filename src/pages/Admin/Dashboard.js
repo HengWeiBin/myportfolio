@@ -84,7 +84,13 @@ const Dashboard = () => {
   useEffect(() => { fetchData(); }, [fetchData]);
 
   const handleOpenAdd = () => requestTransition(() => { setIsEdit(false); setModalData({}); setShowModal(true); });
-  const handleOpenEdit = (item) => requestTransition(() => { setIsEdit(true); setModalData(item); setShowModal(true); });
+  const handleOpenEdit = (item) =>
+    requestTransition(() => {
+      const freshItem = data.find((i) => i.id === item.id) || item;
+      setIsEdit(true);
+      setModalData(freshItem);
+      setShowModal(true);
+    });
   const handleDelete = (id) => requestTransition(() => setConfirmModal({ isOpen: true, id }));
 
   const performDelete = async () => {
@@ -131,15 +137,6 @@ const Dashboard = () => {
     }
   };
 
-  const handleUpdateItem = async (id, updatedItem) => {
-    try {
-      const updates = { projects: api.updateProject, certificates: api.updateCertificate, experience: api.updateExperience };
-      if (updates[activeTab]) await updates[activeTab](id, updatedItem);
-      toast.success('Updated successfully');
-      fetchData();
-    } catch (err) { toast.error('Failed to update: ' + err.message); }
-  };
-
   const handleProfileSave = async (updated) => {
     try {
       await api.updateProfile(updated);
@@ -182,9 +179,9 @@ const Dashboard = () => {
       </div>
 
       <div className="bg-cyber-card/40 border border-cyber-border rounded-lg p-5">
-        {activeTab === 'projects' && <ProjectsTab {...batchTabProps} onUpdateProject={handleUpdateItem} />}
-        {activeTab === 'certificates' && <CertificatesTab {...batchTabProps} onUpdateCertificate={handleUpdateItem} />}
-        {activeTab === 'experience' && <ExperienceTab {...batchTabProps} onUpdateExperience={handleUpdateItem} />}
+        {activeTab === 'projects' && <ProjectsTab {...batchTabProps} />}
+        {activeTab === 'certificates' && <CertificatesTab {...batchTabProps} />}
+        {activeTab === 'experience' && <ExperienceTab {...batchTabProps} />}
         {activeTab === 'skills' && <SkillsTab data={data} loading={loading} onAdd={handleOpenAdd} onEdit={handleOpenEdit} onDelete={handleDelete} />}
         {activeTab === 'profile' && <ProfileTab initialProfile={profile} onSaveProfile={handleProfileSave} />}
         {activeTab === 'agent' && <AgentTab />}

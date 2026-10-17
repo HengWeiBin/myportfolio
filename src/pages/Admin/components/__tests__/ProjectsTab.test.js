@@ -112,33 +112,4 @@ describe('ProjectsTab', () => {
 
     expect(onUpdateField).toHaveBeenCalledWith('1', 'tier', 'featured');
   });
-
-  it('maintains backward compatibility with onUpdateProject when staging props are absent', () => {
-    const onUpdateProject = vi.fn();
-
-    render(
-      <ProjectsTab
-        data={sampleProjects}
-        onUpdateProject={onUpdateProject}
-        onAdd={vi.fn()}
-        onEdit={vi.fn()}
-        onDelete={vi.fn()}
-      />
-    );
-
-    // Backward compat moveUp
-    const moveUpButtons = screen.getAllByRole('button', { name: '▲' });
-    fireEvent.click(moveUpButtons[1]);
-    expect(onUpdateProject).toHaveBeenCalledWith('2', expect.objectContaining({ id: '2', sort_order: 0 }));
-
-    // Backward compat moveDown
-    const moveDownButtons = screen.getAllByRole('button', { name: '▼' });
-    fireEvent.click(moveDownButtons[0]);
-    expect(onUpdateProject).toHaveBeenCalledWith('1', expect.objectContaining({ id: '1', sort_order: 1 }));
-
-    // Backward compat tier change
-    const select = screen.getByLabelText('Tier for Alpha Project');
-    fireEvent.change(select, { target: { value: 'foundation' } });
-    expect(onUpdateProject).toHaveBeenCalledWith('1', expect.objectContaining({ id: '1', tier: 'foundation' }));
-  });
 });

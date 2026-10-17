@@ -13,7 +13,6 @@ const ProjectsTab = ({
   onAdd,
   onEdit,
   onDelete,
-  onUpdateProject,
   stagedData,
   onMoveUp,
   onMoveDown,
@@ -29,28 +28,18 @@ const ProjectsTab = ({
   const handleTierChange = (project, newTier) => {
     if (onUpdateField) {
       onUpdateField(project.id, 'tier', newTier);
-    } else if (onUpdateProject) {
-      onUpdateProject(project.id, { ...project, tier: newTier });
     }
   };
 
   const handleMoveUp = (project) => {
     if (onMoveUp) {
       onMoveUp(project.id);
-    } else if (onUpdateProject) {
-      const currentOrder = Number(project.sort_order) || 0;
-      const nextOrder = Math.max(0, currentOrder - 1);
-      onUpdateProject(project.id, { ...project, sort_order: nextOrder });
     }
   };
 
   const handleMoveDown = (project) => {
     if (onMoveDown) {
       onMoveDown(project.id);
-    } else if (onUpdateProject) {
-      const currentOrder = Number(project.sort_order) || 0;
-      const nextOrder = Math.max(0, currentOrder + 1);
-      onUpdateProject(project.id, { ...project, sort_order: nextOrder });
     }
   };
 

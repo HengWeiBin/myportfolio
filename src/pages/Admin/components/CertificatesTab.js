@@ -13,7 +13,6 @@ const CertificatesTab = ({
   onAdd,
   onEdit,
   onDelete,
-  onUpdateCertificate,
   stagedData,
   onMoveUp,
   onMoveDown,
@@ -29,28 +28,18 @@ const CertificatesTab = ({
   const handleTierChange = (cert, newTier) => {
     if (onUpdateField) {
       onUpdateField(cert.id, 'tier', newTier);
-    } else if (onUpdateCertificate) {
-      onUpdateCertificate(cert.id, { ...cert, tier: newTier });
     }
   };
 
   const handleMoveUp = (cert) => {
     if (onMoveUp) {
       onMoveUp(cert.id);
-    } else if (onUpdateCertificate) {
-      const currentOrder = Number(cert.sort_order) || 0;
-      const nextOrder = Math.max(0, currentOrder - 1);
-      onUpdateCertificate(cert.id, { ...cert, sort_order: nextOrder });
     }
   };
 
   const handleMoveDown = (cert) => {
     if (onMoveDown) {
       onMoveDown(cert.id);
-    } else if (onUpdateCertificate) {
-      const currentOrder = Number(cert.sort_order) || 0;
-      const nextOrder = Math.max(0, currentOrder + 1);
-      onUpdateCertificate(cert.id, { ...cert, sort_order: nextOrder });
     }
   };
 
