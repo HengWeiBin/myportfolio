@@ -1,16 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { toast } from 'react-toastify';
-import {
-  getProjects, addProject, updateProject, deleteProject,
-  getCertificates, addCertificate, updateCertificate, deleteCertificate,
-  getExperience, addExperience, updateExperience, deleteExperience,
-  getProfile, updateProfile,
-  getSkills, addSkill, updateSkill, deleteSkill,
-} from '../../services/api';
+import * as api from '../../services/api';
 import { uploadImageToR2, deleteImageFromR2 } from '../../services/upload';
 import ConfirmModal from '../../components/Common/ConfirmModal';
 import { FloatingActionBar } from './components/Shared';
 import useStagedList from './hooks/useStagedList';
+import useNavigationGuard from './hooks/useNavigationGuard';
+import UnsavedChangesModal from './components/UnsavedChangesModal';
 import { batchUpdateItems } from './services/batchSave';
 import ProjectsTab from './components/ProjectsTab';
 import ProjectModal from './components/ProjectModal';
@@ -45,40 +41,51 @@ const Dashboard = () => {
   } = useStagedList(isBatchSupportedTab ? data : []);
 
   const handleBatchSave = async () => {
-    if (!dirtyItems || dirtyItems.length === 0) return;
+    if (!dirtyItems || dirtyItems.length === 0) return true;
     setIsSaving(true);
     try {
       await batchUpdateItems(activeTab, dirtyItems);
       setData(stagedData);
       commit(stagedData);
       toast.success('Changes saved successfully');
+      return true;
     } catch (e) {
       toast.error('Failed to save changes: ' + e.message);
+      return false;
     } finally {
       setIsSaving(false);
     }
   };
 
+  const {
+    isGuardOpen, requestTransition,
+    handleSaveAndProceed, handleDiscardAndProceed, handleCancel,
+  } = useNavigationGuard({
+    isDirty: isBatchSupportedTab && isDirty,
+    onSave: handleBatchSave,
+    onDiscard: discard,
+  });
+
+  const handleTabChange = (tab) => {
+    if (tab !== activeTab) requestTransition(() => setActiveTab(tab));
+  };
+
   const fetchData = useCallback(async () => {
-    if (activeTab === 'agent') {
-      setLoading(false);
-      return;
-    }
+    if (activeTab === 'agent') { setLoading(false); return; }
     setLoading(true);
     try {
-      if (activeTab === 'projects') setData(await getProjects());
-      else if (activeTab === 'certificates') setData(await getCertificates());
-      else if (activeTab === 'experience') setData(await getExperience());
-      else if (activeTab === 'skills') setData(await getSkills());
-      else if (activeTab === 'profile') setProfile((await getProfile()) || {});
+      const fetchers = { projects: api.getProjects, certificates: api.getCertificates, experience: api.getExperience, skills: api.getSkills };
+      if (fetchers[activeTab]) setData(await fetchers[activeTab]());
+      else if (activeTab === 'profile') setProfile((await api.getProfile()) || {});
     } catch (e) { toast.error('Failed to fetch data: ' + e.message); }
     finally { setLoading(false); }
   }, [activeTab]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  const handleOpenAdd = () => { setIsEdit(false); setModalData({}); setShowModal(true); };
-  const handleOpenEdit = (item) => { setIsEdit(true); setModalData(item); setShowModal(true); };
+  const handleOpenAdd = () => requestTransition(() => { setIsEdit(false); setModalData({}); setShowModal(true); });
+  const handleOpenEdit = (item) => requestTransition(() => { setIsEdit(true); setModalData(item); setShowModal(true); });
+  const handleDelete = (id) => requestTransition(() => setConfirmModal({ isOpen: true, id }));
 
   const performDelete = async () => {
     try {
@@ -86,10 +93,8 @@ const Dashboard = () => {
       if (item?.image_url && (activeTab === 'projects' || activeTab === 'certificates')) {
         try { await deleteImageFromR2(item.image_url); } catch (e) { console.warn(e); }
       }
-      if (activeTab === 'projects') await deleteProject(confirmModal.id);
-      else if (activeTab === 'certificates') await deleteCertificate(confirmModal.id);
-      else if (activeTab === 'experience') await deleteExperience(confirmModal.id);
-      else if (activeTab === 'skills') await deleteSkill(confirmModal.id);
+      const deletes = { projects: api.deleteProject, certificates: api.deleteCertificate, experience: api.deleteExperience, skills: api.deleteSkill };
+      if (deletes[activeTab]) await deletes[activeTab](confirmModal.id);
 
       toast.success('Item deleted successfully');
       setConfirmModal({ isOpen: false, id: null });
@@ -106,18 +111,16 @@ const Dashboard = () => {
         dataToSave.image_url = await uploadImageToR2(dataToSave.file, activeTab);
         setUploading(false);
       }
-      if (activeTab === 'projects') {
-        if (isEdit) await updateProject(dataToSave.id, dataToSave);
-        else await addProject({ ...dataToSave, tags: dataToSave.tags || [] });
-      } else if (activeTab === 'certificates') {
-        if (isEdit) await updateCertificate(dataToSave.id, dataToSave);
-        else await addCertificate(dataToSave);
-      } else if (activeTab === 'experience') {
-        if (isEdit) await updateExperience(dataToSave.id, dataToSave);
-        else await addExperience(dataToSave);
-      } else if (activeTab === 'skills') {
-        if (isEdit) await updateSkill(dataToSave.id, dataToSave);
-        else await addSkill(dataToSave);
+      const mutations = {
+        projects: { update: api.updateProject, add: (d) => api.addProject({ ...d, tags: d.tags || [] }) },
+        certificates: { update: api.updateCertificate, add: api.addCertificate },
+        experience: { update: api.updateExperience, add: api.addExperience },
+        skills: { update: api.updateSkill, add: api.addSkill },
+      };
+      const apiSet = mutations[activeTab];
+      if (apiSet) {
+        if (isEdit) await apiSet.update(dataToSave.id, dataToSave);
+        else await apiSet.add(dataToSave);
       }
       setShowModal(false);
       toast.success(`${isEdit ? 'Updated' : 'Added'} successfully`);
@@ -130,9 +133,8 @@ const Dashboard = () => {
 
   const handleUpdateItem = async (id, updatedItem) => {
     try {
-      if (activeTab === 'projects') await updateProject(id, updatedItem);
-      else if (activeTab === 'certificates') await updateCertificate(id, updatedItem);
-      else if (activeTab === 'experience') await updateExperience(id, updatedItem);
+      const updates = { projects: api.updateProject, certificates: api.updateCertificate, experience: api.updateExperience };
+      if (updates[activeTab]) await updates[activeTab](id, updatedItem);
       toast.success('Updated successfully');
       fetchData();
     } catch (err) { toast.error('Failed to update: ' + err.message); }
@@ -140,10 +142,16 @@ const Dashboard = () => {
 
   const handleProfileSave = async (updated) => {
     try {
-      await updateProfile(updated);
+      await api.updateProfile(updated);
       toast.success('Profile updated successfully!');
       fetchData();
     } catch (e) { toast.error(e.message); }
+  };
+
+  const batchTabProps = {
+    data, stagedData, loading, onAdd: handleOpenAdd, onEdit: handleOpenEdit,
+    onDelete: handleDelete, onMoveUp: moveUp, onMoveDown: moveDown,
+    onUpdateField: updateField, isItemDirty,
   };
 
   return (
@@ -161,7 +169,7 @@ const Dashboard = () => {
           <button
             key={tab}
             type="button"
-            onClick={() => setActiveTab(tab)}
+            onClick={() => handleTabChange(tab)}
             className={`flex-1 min-w-[110px] py-2.5 px-4 font-mono text-xs font-semibold capitalize rounded transition-all cursor-pointer ${
               activeTab === tab
                 ? 'bg-cyber-surface text-cyan-electric border border-cyan-electric/40 shadow-[0_0_12px_rgba(0,240,255,0.15)]'
@@ -174,55 +182,21 @@ const Dashboard = () => {
       </div>
 
       <div className="bg-cyber-card/40 border border-cyber-border rounded-lg p-5">
-        {activeTab === 'projects' && (
-          <ProjectsTab
-            data={data} stagedData={stagedData} loading={loading} onAdd={handleOpenAdd}
-            onEdit={handleOpenEdit} onDelete={(id) => setConfirmModal({ isOpen: true, id })}
-            onUpdateProject={handleUpdateItem} onMoveUp={moveUp} onMoveDown={moveDown}
-            onUpdateField={updateField} isItemDirty={isItemDirty}
-          />
-        )}
-        {activeTab === 'certificates' && (
-          <CertificatesTab
-            data={data} stagedData={stagedData} loading={loading} onAdd={handleOpenAdd}
-            onEdit={handleOpenEdit} onDelete={(id) => setConfirmModal({ isOpen: true, id })}
-            onUpdateCertificate={handleUpdateItem} onMoveUp={moveUp} onMoveDown={moveDown}
-            onUpdateField={updateField} isItemDirty={isItemDirty}
-          />
-        )}
-        {activeTab === 'experience' && (
-          <ExperienceTab
-            data={data} stagedData={stagedData} loading={loading} onAdd={handleOpenAdd}
-            onEdit={handleOpenEdit} onDelete={(id) => setConfirmModal({ isOpen: true, id })}
-            onUpdateExperience={handleUpdateItem} onMoveUp={moveUp} onMoveDown={moveDown}
-            onUpdateField={updateField} isItemDirty={isItemDirty}
-          />
-        )}
-        {activeTab === 'skills' && (
-          <SkillsTab
-            data={data} loading={loading} onAdd={handleOpenAdd}
-            onEdit={handleOpenEdit} onDelete={(id) => setConfirmModal({ isOpen: true, id })}
-          />
-        )}
-        {activeTab === 'profile' && (
-          <ProfileTab initialProfile={profile} onSaveProfile={handleProfileSave} />
-        )}
-        {activeTab === 'agent' && (
-          <AgentTab />
-        )}
+        {activeTab === 'projects' && <ProjectsTab {...batchTabProps} onUpdateProject={handleUpdateItem} />}
+        {activeTab === 'certificates' && <CertificatesTab {...batchTabProps} onUpdateCertificate={handleUpdateItem} />}
+        {activeTab === 'experience' && <ExperienceTab {...batchTabProps} onUpdateExperience={handleUpdateItem} />}
+        {activeTab === 'skills' && <SkillsTab data={data} loading={loading} onAdd={handleOpenAdd} onEdit={handleOpenEdit} onDelete={handleDelete} />}
+        {activeTab === 'profile' && <ProfileTab initialProfile={profile} onSaveProfile={handleProfileSave} />}
+        {activeTab === 'agent' && <AgentTab />}
       </div>
 
-      {showModal && activeTab === 'projects' && (
-        <ProjectModal isOpen isEdit={isEdit} initialData={modalData} onClose={() => setShowModal(false)} onSave={handleSave} uploading={uploading} />
-      )}
-      {showModal && activeTab === 'certificates' && (
-        <CertificateModal isOpen isEdit={isEdit} initialData={modalData} onClose={() => setShowModal(false)} onSave={handleSave} uploading={uploading} />
-      )}
-      {showModal && activeTab === 'experience' && (
-        <ExperienceModal isOpen isEdit={isEdit} initialData={modalData} onClose={() => setShowModal(false)} onSave={handleSave} />
-      )}
-      {showModal && activeTab === 'skills' && (
-        <SkillModal isOpen isEdit={isEdit} initialData={modalData} onClose={() => setShowModal(false)} onSave={handleSave} />
+      {showModal && (
+        <>
+          {activeTab === 'projects' && <ProjectModal isOpen isEdit={isEdit} initialData={modalData} onClose={() => setShowModal(false)} onSave={handleSave} uploading={uploading} />}
+          {activeTab === 'certificates' && <CertificateModal isOpen isEdit={isEdit} initialData={modalData} onClose={() => setShowModal(false)} onSave={handleSave} uploading={uploading} />}
+          {activeTab === 'experience' && <ExperienceModal isOpen isEdit={isEdit} initialData={modalData} onClose={() => setShowModal(false)} onSave={handleSave} />}
+          {activeTab === 'skills' && <SkillModal isOpen isEdit={isEdit} initialData={modalData} onClose={() => setShowModal(false)} onSave={handleSave} />}
+        </>
       )}
 
       <ConfirmModal
@@ -230,6 +204,14 @@ const Dashboard = () => {
         message="Are you sure you want to delete this item? This action cannot be undone."
         onConfirm={performDelete} onCancel={() => setConfirmModal({ isOpen: false, id: null })}
         confirmText="Delete" cancelText="Cancel"
+      />
+
+      <UnsavedChangesModal
+        isOpen={isGuardOpen}
+        onSaveAndProceed={handleSaveAndProceed}
+        onDiscardAndProceed={handleDiscardAndProceed}
+        onCancel={handleCancel}
+        isSaving={isSaving}
       />
 
       <FloatingActionBar

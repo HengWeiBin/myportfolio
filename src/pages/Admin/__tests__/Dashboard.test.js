@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { toast } from 'react-toastify';
 import Dashboard from '../Dashboard';
 import * as api from '../../../services/api';
@@ -253,6 +253,184 @@ describe('Dashboard Batch Save & Staging Integration', () => {
 
     await waitFor(() => {
       expect(bar).toHaveClass('opacity-0', 'invisible');
+    });
+  });
+
+  describe('Safety & Navigation Guards', () => {
+    it('intercepts tab switching when dirty and aborts transition if Cancel is chosen', async () => {
+      render(<Dashboard />);
+      await waitFor(() => {
+        expect(screen.getByText('Radar Fusion')).toBeInTheDocument();
+      });
+
+      // Modify item
+      const tierSelect = screen.getByLabelText('Tier for Radar Fusion');
+      fireEvent.change(tierSelect, { target: { value: 'featured' } });
+
+      // Click Certificates tab
+      const certsTabButton = screen.getByRole('button', { name: /certificates/i });
+      fireEvent.click(certsTabButton);
+
+      // Unsaved changes modal should appear
+      const guardModal = screen.getByTestId('unsaved-changes-modal');
+      expect(guardModal).toBeInTheDocument();
+
+      // Click Cancel
+      const cancelBtn = within(guardModal).getByRole('button', { name: /cancel/i });
+      fireEvent.click(cancelBtn);
+
+      // Dialog should close, and user remains on Projects tab with dirty indicators still present
+      await waitFor(() => {
+        expect(screen.queryByTestId('unsaved-changes-modal')).not.toBeInTheDocument();
+      });
+      expect(screen.getByText('Radar Fusion')).toBeInTheDocument();
+      expect(screen.getAllByTestId('dirty-indicator')).toHaveLength(1);
+    });
+
+    it('intercepts tab switching when dirty and switches tab after Discard & Proceed', async () => {
+      render(<Dashboard />);
+      await waitFor(() => {
+        expect(screen.getByText('Radar Fusion')).toBeInTheDocument();
+      });
+
+      // Modify item
+      const tierSelect = screen.getByLabelText('Tier for Radar Fusion');
+      fireEvent.change(tierSelect, { target: { value: 'featured' } });
+
+      // Click Certificates tab
+      const certsTabButton = screen.getByRole('button', { name: /certificates/i });
+      fireEvent.click(certsTabButton);
+
+      // Modal appears
+      const guardModal = screen.getByTestId('unsaved-changes-modal');
+      expect(guardModal).toBeInTheDocument();
+
+      // Click Discard & Proceed
+      const discardProceedBtn = within(guardModal).getByRole('button', { name: /discard & proceed/i });
+      fireEvent.click(discardProceedBtn);
+
+      // Transitions to Certificates tab
+      await waitFor(() => {
+        expect(screen.getByText('AWS ML Specialty')).toBeInTheDocument();
+      });
+      expect(api.updateProject).not.toHaveBeenCalled();
+    });
+
+    it('intercepts tab switching when dirty and saves changes before switching on Save & Proceed', async () => {
+      render(<Dashboard />);
+      await waitFor(() => {
+        expect(screen.getByText('Radar Fusion')).toBeInTheDocument();
+      });
+
+      // Modify item
+      const tierSelect = screen.getByLabelText('Tier for Radar Fusion');
+      fireEvent.change(tierSelect, { target: { value: 'featured' } });
+
+      // Click Certificates tab
+      const certsTabButton = screen.getByRole('button', { name: /certificates/i });
+      fireEvent.click(certsTabButton);
+
+      // Modal appears
+      const guardModal = screen.getByTestId('unsaved-changes-modal');
+      expect(guardModal).toBeInTheDocument();
+
+      // Click Save & Proceed
+      const saveProceedBtn = within(guardModal).getByRole('button', { name: /save & proceed/i });
+      fireEvent.click(saveProceedBtn);
+
+      await waitFor(() => {
+        expect(api.updateProject).toHaveBeenCalledTimes(1);
+        expect(screen.getByText('AWS ML Specialty')).toBeInTheDocument();
+      });
+      expect(toast.success).toHaveBeenCalledWith('Changes saved successfully');
+    });
+
+    it('attaches window beforeunload event listener when dirty and removes it when discarded', async () => {
+      const addEventListenerSpy = vi.spyOn(window, 'addEventListener');
+      const removeEventListenerSpy = vi.spyOn(window, 'removeEventListener');
+
+      render(<Dashboard />);
+      await waitFor(() => {
+        expect(screen.getByText('Radar Fusion')).toBeInTheDocument();
+      });
+
+      expect(addEventListenerSpy).not.toHaveBeenCalledWith('beforeunload', expect.any(Function));
+
+      // Make dirty
+      const tierSelect = screen.getByLabelText('Tier for Radar Fusion');
+      fireEvent.change(tierSelect, { target: { value: 'featured' } });
+
+      expect(addEventListenerSpy).toHaveBeenCalledWith('beforeunload', expect.any(Function));
+
+      // Dispatch beforeunload event to verify preventDefault is invoked
+      const event = new Event('beforeunload', { cancelable: true });
+      const preventDefaultSpy = vi.spyOn(event, 'preventDefault');
+      window.dispatchEvent(event);
+      expect(preventDefaultSpy).toHaveBeenCalled();
+
+      // Click Discard on floating action bar
+      const discardBtn = screen.getByRole('button', { name: /discard/i });
+      fireEvent.click(discardBtn);
+
+      expect(removeEventListenerSpy).toHaveBeenCalledWith('beforeunload', expect.any(Function));
+    });
+
+    it('intercepts + New Entry, Edit, and Delete actions when dirty', async () => {
+      render(<Dashboard />);
+      await waitFor(() => {
+        expect(screen.getByText('Radar Fusion')).toBeInTheDocument();
+      });
+
+      // Make dirty
+      const tierSelect = screen.getByLabelText('Tier for Radar Fusion');
+      fireEvent.change(tierSelect, { target: { value: 'featured' } });
+
+      // 1. Click "+ New Entry"
+      const addBtn = screen.getByRole('button', { name: /\+ new entry/i });
+      fireEvent.click(addBtn);
+
+      let guardModal = screen.getByTestId('unsaved-changes-modal');
+      expect(guardModal).toBeInTheDocument();
+
+      // Cancel keeps user on table
+      fireEvent.click(within(guardModal).getByRole('button', { name: /cancel/i }));
+      await waitFor(() => {
+        expect(screen.queryByTestId('unsaved-changes-modal')).not.toBeInTheDocument();
+      });
+
+      // 2. Click "Edit"
+      const editButtons = screen.getAllByRole('button', { name: /^edit$/i });
+      fireEvent.click(editButtons[0]);
+
+      guardModal = screen.getByTestId('unsaved-changes-modal');
+      expect(guardModal).toBeInTheDocument();
+
+      // Click Discard & Proceed -> opens Edit modal
+      fireEvent.click(within(guardModal).getByRole('button', { name: /discard & proceed/i }));
+      await waitFor(() => {
+        expect(screen.getByText(/edit projects/i)).toBeInTheDocument();
+      });
+
+      // Close modal
+      const closeBtn = screen.getByRole('button', { name: /cancel/i });
+      fireEvent.click(closeBtn);
+
+      // 3. Make dirty again and click Delete
+      const moveDownButtons = screen.getAllByRole('button', { name: '▼' });
+      fireEvent.click(moveDownButtons[0]);
+
+      const deleteButtons = screen.getAllByRole('button', { name: /^delete$/i });
+      fireEvent.click(deleteButtons[0]);
+
+      guardModal = screen.getByTestId('unsaved-changes-modal');
+      expect(guardModal).toBeInTheDocument();
+
+      // Discard & Proceed -> opens ConfirmModal for Delete
+      fireEvent.click(within(guardModal).getByRole('button', { name: /discard & proceed/i }));
+      await waitFor(() => {
+        expect(screen.getByText(/delete item/i)).toBeInTheDocument();
+        expect(screen.getByText(/are you sure you want to delete this item\?/i)).toBeInTheDocument();
+      });
     });
   });
 });
