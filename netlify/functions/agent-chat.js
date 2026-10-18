@@ -19,6 +19,7 @@ const { decrypt, hashIp } = require('./utils/crypto');
 const DAILY_RATE_LIMIT = parseInt(process.env.AGENT_DAILY_RATE_LIMIT || '5', 10);
 const DAILY_TOKEN_LIMIT = parseInt(process.env.AGENT_DAILY_TOKEN_LIMIT || '50000', 10);
 let customSql = null;
+let customFetch = null;
 
 // In-memory fallback rate limiter for environments without active database connection
 const memoryUsageMap = new Map();
@@ -460,7 +461,17 @@ function classifyPromptSafety(prompt) {
     lower.includes('print api key') ||
     lower.includes('reveal api key') ||
     lower.includes('dan mode') ||
-    lower.includes('jailbreak')
+    lower.includes('jailbreak') ||
+    lower.includes('忽略先前指令') ||
+    lower.includes('忽略所有指令') ||
+    lower.includes('忽略指示') ||
+    lower.includes('顯示系統提示') ||
+    lower.includes('系統提示') ||
+    lower.includes('系統指令') ||
+    lower.includes('系統prompt') ||
+    lower.includes('輸出api key') ||
+    lower.includes('印出api key') ||
+    lower.includes('越獄')
   ) {
     return 'injection';
   }
@@ -472,7 +483,13 @@ function classifyPromptSafety(prompt) {
     lower.includes('nda details') ||
     lower.includes('proprietary data') ||
     lower.includes('unlisted contract') ||
-    lower.includes('confidential source code')
+    lower.includes('confidential source code') ||
+    lower.includes('機密指標') ||
+    lower.includes('秘密客戶') ||
+    lower.includes('保密協定') ||
+    lower.includes('機密數據') ||
+    lower.includes('機密原始碼') ||
+    lower.includes('未公開合約')
   ) {
     return 'nda';
   }
@@ -482,7 +499,10 @@ function classifyPromptSafety(prompt) {
     'recipe', 'chocolate chip', 'bake a cake', 'joke', 'tell me a joke',
     'poem', 'write a story', 'weather in', 'capital of',
     'who won the world cup', 'president of', 'cryptocurrency trading',
-    'buy bitcoin', 'horoscope'
+    'buy bitcoin', 'horoscope',
+    '食譜', '烤蛋糕', '做蛋糕', '餅乾', '餅干', '做菜', '烹飪', '烹饪',
+    '笑話', '說個笑話', '講笑話',
+    '寫詩', '說故事', '天氣', '首都', '比特幣', '星座'
   ];
   if (offTopicKeywords.some(keyword => lower.includes(keyword))) {
     return 'off_topic';
@@ -500,19 +520,48 @@ function determineToolsToCall(prompt) {
   const lower = (prompt || '').toLowerCase();
   const tools = [];
 
-  if (lower.includes('project') || lower.includes('portfolio') || lower.includes('work') || lower.includes('build') || lower.includes('demo')) {
+  // 1. Projects
+  const projectKeywords = [
+    'project', 'portfolio', 'work', 'build', 'demo',
+    '專案', '作品', '項目', '系统', '系統', '開發', '开发', '作品集'
+  ];
+  if (projectKeywords.some(kw => lower.includes(kw))) {
     tools.push('list_projects');
   }
-  if (lower.includes('skill') || lower.includes('tech stack') || lower.includes('technology') || lower.includes('languages') || lower.includes('tools')) {
+
+  // 2. Skills
+  const skillKeywords = [
+    'skill', 'tech stack', 'technology', 'languages', 'tools', 'stack',
+    '技能', '技術', '技术', '專長', '专长', '語言', '语言', '工具', '框架', '程式語言'
+  ];
+  if (skillKeywords.some(kw => lower.includes(kw))) {
     tools.push('list_skills');
   }
-  if (lower.includes('experience') || lower.includes('career') || lower.includes('job') || lower.includes('company') || lower.includes('role')) {
+
+  // 3. Experience
+  const expKeywords = [
+    'experience', 'career', 'job', 'company', 'role',
+    '經歷', '经历', '工作', '職歷', '职历', '職涯', '职涯', '公司', '任職', '任职', '背景'
+  ];
+  if (expKeywords.some(kw => lower.includes(kw))) {
     tools.push('get_experience');
   }
-  if (lower.includes('cert') || lower.includes('credential') || lower.includes('license')) {
+
+  // 4. Certificates
+  const certKeywords = [
+    'cert', 'credential', 'license',
+    '證照', '证照', '證書', '证书', '認證', '认证', '執照', '执照'
+  ];
+  if (certKeywords.some(kw => lower.includes(kw))) {
     tools.push('list_certificates');
   }
-  if (lower.includes('about') || lower.includes('profile') || lower.includes('contact') || lower.includes('who are you') || lower.includes('who is') || lower.includes('resume') || lower.includes('email') || lower.includes('bio')) {
+
+  // 5. Profile
+  const profileKeywords = [
+    'about', 'profile', 'contact', 'who are you', 'who is', 'resume', 'email', 'bio',
+    '誰', '谁', '你是誰', '你是谁', '關於', '关于', '介紹', '介绍', '聯絡', '联络', '履歷', '履历', '信箱', '郵箱', '邮箱'
+  ];
+  if (profileKeywords.some(kw => lower.includes(kw))) {
     tools.push('get_profile');
   }
 
@@ -523,6 +572,214 @@ function determineToolsToCall(prompt) {
 
   return [...new Set(tools)];
 }
+
+/**
+ * Splits text into streaming token chunks.
+ * For Chinese text, chunks by character and punctuation.
+ * For English text, chunks by words with leading spaces.
+ * @param {string} text
+ * @returns {string[]}
+ */
+function chunkTokens(text) {
+  if (!text) return [];
+  const isChinese = /[\u4e00-\u9fa5]/.test(text);
+  if (isChinese) {
+    const regex = /[\u4e00-\u9fa5\u3000-\u303f\uff00-\uffef]|[A-Za-z0-9_]+|\s+|[^\s\u4e00-\u9fa5\u3000-\u303f\uff00-\uffef]+/g;
+    return text.match(regex) || [text];
+  }
+  const words = text.split(' ');
+  const chunks = [];
+  for (let i = 0; i < words.length; i++) {
+    chunks.push((i === 0 ? '' : ' ') + words[i]);
+  }
+  return chunks;
+}
+
+/**
+ * Formulates a context-aware fallback response based on executed tool traces and prompt language.
+ * @param {Array} toolTrace
+ * @param {string} prompt
+ * @returns {string}
+ */
+function generateFallbackResponse(toolTrace = [], prompt = '') {
+  const isChinese = /[\u4e00-\u9fa5]/.test(prompt);
+
+  if (toolTrace && toolTrace.length > 0) {
+    const projectTool = toolTrace.find(t => t.tool === 'list_projects');
+    const skillTool = toolTrace.find(t => t.tool === 'list_skills');
+    const expTool = toolTrace.find(t => t.tool === 'get_experience');
+    const certTool = toolTrace.find(t => t.tool === 'list_certificates');
+    const profileTool = toolTrace.find(t => t.tool === 'get_profile');
+
+    if (projectTool && projectTool.result && projectTool.result.length > 0) {
+      if (isChinese) {
+        const topProjects = projectTool.result.slice(0, 3).map(p => `「${p.title}」(${(p.tags || []).join(', ')})`).join('、');
+        return `工程師已開發多項指標性專案，包括：${topProjects}。公開專案的詳細資訊與指標可於作品集中查閱，機密專案則依保密協定（NDA）予以保護。`;
+      } else {
+        const topProjects = projectTool.result.slice(0, 3).map(p => `"${p.title}" (${(p.tags || []).join(', ')})`).join(', ');
+        return `The engineer has developed notable projects including ${topProjects}. Details and metrics for public projects are accessible in the portfolio, while confidential work remains protected under NDA.`;
+      }
+    } else if (skillTool && skillTool.result && skillTool.result.length > 0) {
+      if (isChinese) {
+        const topSkills = skillTool.result.slice(0, 6).map(s => s.name).join('、');
+        return `工程師的核心技術棧包括：${topSkills}。`;
+      } else {
+        const topSkills = skillTool.result.slice(0, 6).map(s => s.name).join(', ');
+        return `The engineer's core technical stack includes: ${topSkills}.`;
+      }
+    } else if (expTool && expTool.result && expTool.result.length > 0) {
+      const latest = expTool.result[0];
+      if (isChinese) {
+        return `工程師具備專業經歷，曾於 ${latest.company} 擔任 ${latest.role}（${latest.date_range}）。`;
+      } else {
+        return `The engineer has professional experience as ${latest.role} at ${latest.company} (${latest.date_range}).`;
+      }
+    } else if (certTool && certTool.result && certTool.result.length > 0) {
+      if (isChinese) {
+        const topCerts = certTool.result.slice(0, 3).map(c => `「${c.title}」（${c.issuer}）`).join('、');
+        return `工程師擁有的專業認證包括：${topCerts}。`;
+      } else {
+        const topCerts = certTool.result.slice(0, 3).map(c => `"${c.title}" (${c.issuer})`).join(', ');
+        return `The engineer holds professional certifications including: ${topCerts}.`;
+      }
+    } else if (profileTool && profileTool.result) {
+      if (isChinese) {
+        return `${profileTool.result.name} 是一位 ${profileTool.result.title}。${profileTool.result.bio || ''}`;
+      } else {
+        return `${profileTool.result.name} is a ${profileTool.result.title}. ${profileTool.result.bio}`;
+      }
+    }
+  }
+
+  if (isChinese) {
+    return '我可以協助您探索工程師的專案、技術專長、專業認證與經歷背景。歡迎隨時詢問特定專案或專業領域！';
+  }
+  return "I can assist you in exploring the engineer's projects, technical skills, certifications, and background. Feel free to ask about any specific project or area of expertise.";
+}
+
+/**
+ * Invokes the actual LLM API (Google Gemini or OpenAI/custom baseUrl)
+ * @param {object} llmConfig
+ * @param {string} prompt
+ * @param {Array} toolTrace
+ * @param {string} [systemPrompt]
+ * @returns {Promise<{ text: string, tokensUsed?: number }|null>}
+ */
+async function callLlm(llmConfig, prompt, toolTrace, systemPrompt = SYSTEM_PROMPT) {
+  if (!llmConfig || !llmConfig.apiKey) {
+    return null;
+  }
+
+  const fetchFn = customFetch || (typeof fetch === 'function' ? fetch : globalThis.fetch);
+  if (!fetchFn) {
+    return null;
+  }
+
+  const isMockFetch = Boolean(
+    customFetch ||
+    fetchFn._isMockFunction ||
+    fetchFn.mock ||
+    globalThis.fetch?._isMockFunction ||
+    globalThis.fetch?.mock
+  );
+
+  // In test mode without mock fetch or explicit network enabled, skip real network calls
+  if (process.env.NODE_ENV === 'test' && !isMockFetch && process.env.ENABLE_TEST_NETWORK !== 'true') {
+    return null;
+  }
+
+  const effectivePrompt = systemPrompt || SYSTEM_PROMPT;
+  const timeoutMs = parseInt(process.env.LLM_TIMEOUT_MS || '10000', 10);
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const provider = (llmConfig.provider || 'gemini').toLowerCase();
+    const isGemini = provider === 'gemini' || (!llmConfig.provider && !llmConfig.baseUrl);
+
+    if (isGemini) {
+      const model = llmConfig.model || 'gemini-1.5-flash';
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${llmConfig.apiKey}`;
+
+      const payload = {
+        contents: [
+          {
+            role: 'user',
+            parts: [
+              {
+                text: `${effectivePrompt}\n\nPortfolio Data Context:\n${JSON.stringify(toolTrace, null, 2)}\n\nUser Question:\n${prompt}`
+              }
+            ]
+          }
+        ]
+      };
+
+      const res = await fetchFn(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        signal: controller.signal
+      });
+
+      if (!res.ok) {
+        console.warn(`[agent-chat] Gemini API returned status ${res.status}`);
+        return null;
+      }
+
+      const data = await res.json();
+      const text = data?.candidates?.[0]?.content?.parts?.map(p => p.text).join('') || '';
+      if (!text) return null;
+
+      const tokensUsed = data?.usageMetadata?.totalTokenCount || 0;
+      return { text, tokensUsed };
+    } else {
+      // OpenAI or custom Base URL
+      const rawBaseUrl = llmConfig.baseUrl || 'https://api.openai.com/v1';
+      const baseUrl = rawBaseUrl.replace(/\/+$/, '');
+      const url = `${baseUrl}/chat/completions`;
+      const model = llmConfig.model || 'gpt-4o-mini';
+
+      const payload = {
+        model,
+        messages: [
+          { role: 'system', content: effectivePrompt },
+          {
+            role: 'user',
+            content: `Portfolio Data Context:\n${JSON.stringify(toolTrace, null, 2)}\n\nUser Question:\n${prompt}`
+          }
+        ]
+      };
+
+      const res = await fetchFn(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${llmConfig.apiKey}`
+        },
+        body: JSON.stringify(payload),
+        signal: controller.signal
+      });
+
+      if (!res.ok) {
+        console.warn(`[agent-chat] OpenAI/Custom LLM API returned status ${res.status}`);
+        return null;
+      }
+
+      const data = await res.json();
+      const text = data?.choices?.[0]?.message?.content || '';
+      if (!text) return null;
+
+      const tokensUsed = data?.usage?.total_tokens || 0;
+      return { text, tokensUsed };
+    }
+  } catch (err) {
+    console.warn('[agent-chat] LLM API call failed or timed out:', err.message);
+    return null;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
 
 /**
  * Main serverless Netlify function handler
@@ -652,13 +909,20 @@ exports.handler = async (event) => {
 
   // 4. Guardrail Evaluation
   const safetyCategory = classifyPromptSafety(prompt);
+  const isChinese = /[\u4e00-\u9fa5]/.test(prompt);
 
   if (safetyCategory === 'injection') {
-    responseText = "I cannot fulfill requests attempting to override system instructions or expose sensitive credentials. I am here to discuss the engineer's portfolio, background, and projects.";
+    responseText = isChinese
+      ? "我無法執行嘗試覆蓋系統指令或洩漏敏感金鑰的請求。我是專為介紹工程師的作品集、經歷與專案而設計的 AI 助手。"
+      : "I cannot fulfill requests attempting to override system instructions or expose sensitive credentials. I am here to discuss the engineer's portfolio, background, and projects.";
   } else if (safetyCategory === 'off_topic') {
-    responseText = "I am a dedicated portfolio assistant for this engineer. I can only assist with questions regarding their professional background, projects, skills, experience, and certifications. How can I help you explore their portfolio?";
+    responseText = isChinese
+      ? "我是專門為此工程師服務的作品集助手。我只能回答有關其專業背景、專案、技能、經歷和認證的問題。請問有什麼我可以協助您探索作品集的嗎？"
+      : "I am a dedicated portfolio assistant for this engineer. I can only assist with questions regarding their professional background, projects, skills, experience, and certifications. How can I help you explore their portfolio?";
   } else if (safetyCategory === 'nda') {
-    responseText = "Certain project details, proprietary architectures, and production metrics are protected under Non-Disclosure Agreements (NDA). Please contact the engineer directly via email or LinkedIn for deeper discussions or authorized inquiries.";
+    responseText = isChinese
+      ? "部分專案細節、專有架構及生產指標受保密協定（NDA）保護。請直接透過電子郵件或 LinkedIn 與工程師聯繫以進行進一步洽詢。"
+      : "Certain project details, proprietary architectures, and production metrics are protected under Non-Disclosure Agreements (NDA). Please contact the engineer directly via email or LinkedIn for deeper discussions or authorized inquiries.";
   } else {
     // 5. Execute read-only tools
     const toolsToCall = determineToolsToCall(prompt);
@@ -672,38 +936,31 @@ exports.handler = async (event) => {
     // Resolve LLM config
     const llmConfig = await resolveLlmConfig(sql);
 
-    // Formulate response
-    if (toolTrace.length > 0) {
-      const projectTool = toolTrace.find(t => t.tool === 'list_projects');
-      const skillTool = toolTrace.find(t => t.tool === 'list_skills');
-      const expTool = toolTrace.find(t => t.tool === 'get_experience');
-      const profileTool = toolTrace.find(t => t.tool === 'get_profile');
+    // Formulate response via real LLM API or context-aware fallback
+    let llmResult = null;
+    if (llmConfig && llmConfig.apiKey) {
+      llmResult = await callLlm(llmConfig, prompt, toolTrace, llmConfig.systemPrompt || SYSTEM_PROMPT);
+    }
 
-      if (projectTool && projectTool.result.length > 0) {
-        const topProjects = projectTool.result.slice(0, 3).map(p => `"${p.title}" (${(p.tags || []).join(', ')})`).join(', ');
-        responseText = `The engineer has developed notable projects including ${topProjects}. Details and metrics for public projects are accessible in the portfolio, while confidential work remains protected under NDA.`;
-      } else if (skillTool && skillTool.result.length > 0) {
-        const topSkills = skillTool.result.slice(0, 6).map(s => s.name).join(', ');
-        responseText = `The engineer's core technical stack includes: ${topSkills}.`;
-      } else if (expTool && expTool.result.length > 0) {
-        const latest = expTool.result[0];
-        responseText = `The engineer has professional experience as ${latest.role} at ${latest.company} (${latest.date_range}).`;
-      } else if (profileTool && profileTool.result) {
-        responseText = `${profileTool.result.name} is a ${profileTool.result.title}. ${profileTool.result.bio}`;
-      } else {
-        responseText = "I can assist you in exploring the engineer's projects, technical skills, certifications, and background. Feel free to ask about any specific project or area of expertise.";
+    if (llmResult && llmResult.text) {
+      responseText = llmResult.text;
+      if (llmResult.tokensUsed) {
+        tokensUsed = llmResult.tokensUsed;
       }
     } else {
-      responseText = "I can assist you in exploring the engineer's projects, technical skills, certifications, and background. Feel free to ask about any specific project or area of expertise.";
+      responseText = generateFallbackResponse(toolTrace, prompt);
     }
   }
 
   // 6. Stream tokens
-  const words = responseText.split(' ');
-  for (let i = 0; i < words.length; i++) {
-    const chunk = (i === 0 ? '' : ' ') + words[i];
+  const chunks = chunkTokens(responseText);
+  let streamedChunkCount = 0;
+  for (const chunk of chunks) {
     sseOutput += sseFrame('token', { token: chunk });
-    tokensUsed += 1;
+    streamedChunkCount += 1;
+  }
+  if (!tokensUsed || tokensUsed === 0) {
+    tokensUsed = streamedChunkCount;
   }
 
   const latencyMs = Date.now() - startTime;
@@ -771,6 +1028,9 @@ exports.handler = async (event) => {
 exports._setCustomSql = (sql) => {
   customSql = sql;
 };
+exports._setCustomFetch = (fn) => {
+  customFetch = fn;
+};
 exports._resetMemoryMap = () => {
   memoryUsageMap.clear();
 };
@@ -779,5 +1039,9 @@ exports.checkAndIncrementRateLimit = checkAndIncrementRateLimit;
 exports.resolveLlmConfig = resolveLlmConfig;
 exports.classifyPromptSafety = classifyPromptSafety;
 exports.determineToolsToCall = determineToolsToCall;
+exports.chunkTokens = chunkTokens;
+exports.generateFallbackResponse = generateFallbackResponse;
+exports.callLlm = callLlm;
 exports.SYSTEM_PROMPT = SYSTEM_PROMPT;
 exports.sseFrame = sseFrame;
+
