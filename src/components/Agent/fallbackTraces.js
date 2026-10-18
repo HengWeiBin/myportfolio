@@ -41,7 +41,7 @@ export const FALLBACK_TRACES = [
   {
     id: 'projects_zh',
     lang: 'zh',
-    keywords: ['專案', '作品', '作品集', '核心專案', '感測器', '融合', 'centerfusion', '雷達'],
+    keywords: ['專案', '作品', '作品集', '核心專案', '感測器', '融合', 'centerfusion', '雷達', '項目', '系统', '系統', '開發', '开发', '做了什麼', '做了什么', '專案有哪些', '作品有哪些'],
     thought: '分析專案相關查詢意圖。透過 list_projects() 工具檢索感測器融合與機器學習相關公開專案...',
     toolCalls: [
       {
@@ -99,7 +99,7 @@ export const FALLBACK_TRACES = [
   {
     id: 'skills_zh',
     lang: 'zh',
-    keywords: ['技術', '技能', '專長', '工具', '程式語言', '技術棧', 'deep learning', '深度學習', 'pytorch'],
+    keywords: ['技術', '技能', '專長', '工具', '程式語言', '技術棧', 'deep learning', '深度學習', 'pytorch', '你會什麼技術', '你會什麼', '会什么', '擅長', '擅长', '框架', '語言', '语言', 'tech stack'],
     thought: '透過 list_skills() 檢索技術軍火庫，鎖定深度學習與電腦視覺核心專長...',
     toolCalls: [
       {
@@ -149,7 +149,7 @@ export const FALLBACK_TRACES = [
   {
     id: 'experience_zh',
     lang: 'zh',
-    keywords: ['經歷', '工作', '職歷', '職涯', '公司', '工作經歷', '背景'],
+    keywords: ['經歷', '工作', '職歷', '職涯', '公司', '工作經歷', '背景', '你的經歷是什麼', '你的經歷', '你的经历', '任職', '任职', '經驗', '经验', '做過什麼', '做过什么', '經歷是什麼', '经历是什么'],
     thought: '調閱工作歷程與研究背景 via get_experience()...',
     toolCalls: [
       {
@@ -170,7 +170,57 @@ export const FALLBACK_TRACES = [
     response: "工程師具備紮實的機器學習與感知演算法工程資歷，曾主導自動駕駛多感測器融合與邊緣運算優化。已為您滾動至職涯演進（System Evolution）時間軸。"
   },
 
-  // 7. Profile / Contact - English
+  // 7. Certificates - English
+  {
+    id: 'certificates_en',
+    lang: 'en',
+    keywords: ['cert', 'certificate', 'certification', 'credential', 'license'],
+    thought: 'Querying verified credentials and certifications via list_certificates()...',
+    toolCalls: [
+      {
+        tool: 'list_certificates',
+        params: {},
+        result: [
+          {
+            title: 'Deep Learning Specialization',
+            issuer: 'DeepLearning.AI',
+            date: '2023-04'
+          }
+        ]
+      }
+    ],
+    uiActions: [
+      { type: 'scroll_to', target: 'certificates' }
+    ],
+    response: "The engineer holds verified professional certifications including the Deep Learning Specialization from DeepLearning.AI. I've navigated to the credentials section for you."
+  },
+
+  // 8. Certificates - Traditional Chinese
+  {
+    id: 'certificates_zh',
+    lang: 'zh',
+    keywords: ['證照', '證書', '認證', '執照', '证书', '认证', '执照'],
+    thought: '調閱專業證照與技術認證 via list_certificates()...',
+    toolCalls: [
+      {
+        tool: 'list_certificates',
+        params: {},
+        result: [
+          {
+            title: 'Deep Learning Specialization',
+            issuer: 'DeepLearning.AI',
+            date: '2023-04'
+          }
+        ]
+      }
+    ],
+    uiActions: [
+      { type: 'scroll_to', target: 'certificates' }
+    ],
+    response: "工程師持有具備驗證的專業證照與認證，包括 DeepLearning.AI 的 Deep Learning Specialization。已為您捲動至專業證照與認證專區。"
+  },
+
+  // 9. Profile / Contact - English
   {
     id: 'profile_en',
     lang: 'en',
@@ -193,11 +243,11 @@ export const FALLBACK_TRACES = [
     response: "Wayne Heng is a Machine Learning Engineer specializing in computer vision, autonomous perception, and sensor fusion architectures. You can establish a direct handshake via email or LinkedIn below."
   },
 
-  // 8. Profile / Contact - Traditional Chinese
+  // 10. Profile / Contact - Traditional Chinese
   {
     id: 'profile_zh',
     lang: 'zh',
-    keywords: ['誰', '介紹', '聯絡', '信箱', '履歷', '聯絡方式', '關於', 'wayne', 'heng'],
+    keywords: ['誰', '谁', '你是誰', '你是谁', '介紹', '介绍', '自我介紹', '自我介绍', '簡介', '简介', '聯絡', '联络', '信箱', '郵箱', '邮箱', '履歷', '履历', '聯絡方式', '联系方式', '關於', '关于', 'wayne', 'heng'],
     thought: '查詢工程師個人簡介與聯絡通道 via get_profile()...',
     toolCalls: [
       {
@@ -216,7 +266,7 @@ export const FALLBACK_TRACES = [
     response: "Wayne Heng 是一位專注於電腦視覺、多感測器融合與邊緣 AI 部署的機器學習工程師。已為您捲動至聯絡握手區，可透過電子郵件或 LinkedIn 與他取得聯繫。"
   },
 
-  // 9. Default Fallback - English
+  // 11. Default Fallback - English
   {
     id: 'default_en',
     lang: 'en',
@@ -244,7 +294,7 @@ export const FALLBACK_TRACES = [
     response: "I can help you explore Wayne's projects, core capabilities, research timeline, and verified credentials. You can ask about 3D sensor fusion architectures, technical stack proficiencies, or previous ML roles."
   },
 
-  // 10. Default Fallback - Traditional Chinese
+  // 12. Default Fallback - Traditional Chinese
   {
     id: 'default_zh',
     lang: 'zh',

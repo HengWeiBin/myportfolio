@@ -67,6 +67,24 @@ describe('Fallback Traces & Bilingual Grounding', () => {
     );
   });
 
+  it('correctly maps specific Chinese queries (你是誰, 你的經歷是什麼, 你會什麼技術, 證照)', () => {
+    const profileTrace = getFallbackTrace('你是誰？可以介紹一下自己嗎？');
+    expect(profileTrace.id).toBe('profile_zh');
+    expect(profileTrace.lang).toBe('zh');
+
+    const expTrace = getFallbackTrace('你的經歷是什麼？');
+    expect(expTrace.id).toBe('experience_zh');
+    expect(expTrace.lang).toBe('zh');
+
+    const skillTrace = getFallbackTrace('你會什麼技術？');
+    expect(skillTrace.id).toBe('skills_zh');
+    expect(skillTrace.lang).toBe('zh');
+
+    const certTrace = getFallbackTrace('工程師有哪些證照與證書？');
+    expect(certTrace.id).toBe('certificates_zh');
+    expect(certTrace.lang).toBe('zh');
+  });
+
   it('falls back to default trace for unknown queries', () => {
     const traceEn = getFallbackTrace('Random query XYZ');
     expect(traceEn.id).toBe('default_en');
