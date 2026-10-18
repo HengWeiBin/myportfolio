@@ -6,13 +6,14 @@ import React from 'react';
  * using Tailwind CSS v4 design tokens.
  */
 export const TierBadge = ({ tier = 'standard', className = '' }) => {
-  const normalized = (tier || 'standard').toLowerCase();
+  const rawTier = (tier || 'standard').toLowerCase();
+  const normalized = (rawTier === 'foundation' || rawTier === 'archived') ? 'archive' : rawTier;
 
   const styles = {
     featured: 'bg-cyan-electric/15 text-cyan-electric border-cyan-electric/40 shadow-[0_0_8px_rgba(0,240,255,0.2)]',
-    foundation: 'bg-amber-500/15 text-amber-400 border-amber-500/40 shadow-[0_0_8px_rgba(245,158,11,0.2)]',
     standard: 'bg-blue-500/15 text-blue-400 border-blue-500/30',
     archive: 'bg-slate-700/25 text-slate-400 border-slate-700',
+    foundation: 'bg-slate-700/25 text-slate-400 border-slate-700',
   }[normalized] || 'bg-slate-700/25 text-slate-400 border-slate-700';
 
   return (
