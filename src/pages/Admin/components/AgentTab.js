@@ -112,11 +112,8 @@ const AgentTab = () => {
       {/* 1. Header */}
       <div className="flex justify-between items-center pb-2 border-b border-cyber-border/60">
         <div>
-          <h2 className="text-base font-mono font-bold text-cyan-electric uppercase tracking-wider flex items-center gap-2">
-            <span>Agent Console</span>
-            <span className="px-2 py-0.5 text-[10px] bg-cyan-electric/10 text-cyan-electric border border-cyan-electric/30 rounded">
-              v1.0
-            </span>
+          <h2 className="text-base font-mono font-bold text-cyan-electric uppercase tracking-wider">
+            Agent Console
           </h2>
           <p className="text-xs font-mono text-slate-400 mt-0.5">
             Manage LLM proxy providers, live latency testing, guardrails, and conversation telemetry.

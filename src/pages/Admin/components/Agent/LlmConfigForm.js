@@ -102,11 +102,7 @@ const LlmConfigForm = ({ config, onSave, onTestLatency, testingLatency, latencyR
             <span className="text-slate-500">
               {promptChars} chars (~{estimatedTokens} tok)
             </span>
-            {isPromptValid ? (
-              <span className="text-cyan-electric text-xs font-semibold px-2 py-0.5 rounded bg-cyan-electric/10 border border-cyan-electric/30">
-                ✓ Validated Prompt
-              </span>
-            ) : (
+            {!isPromptValid && (
               <span className="text-terminal-rose text-xs font-semibold px-2 py-0.5 rounded bg-terminal-rose/10 border border-terminal-rose/30">
                 ⚠️ Too short
               </span>

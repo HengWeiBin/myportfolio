@@ -498,7 +498,8 @@ test.describe('Admin Panel', () => {
       await expect(apiKeyInput).toHaveValue('••••8492');
 
       // 3. System prompt validation
-      await expect(page.getByText('✓ Validated Prompt')).toBeVisible();
+      await expect(page.getByText('⚠️ Too short')).not.toBeVisible();
+      await expect(page.getByText(/chars \(~.*tok\)/)).toBeVisible();
 
       // 4. Test Provider Latency
       const testLatencyBtn = page.locator('button:has-text("Test Provider Latency")');
