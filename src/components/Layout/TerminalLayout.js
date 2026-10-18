@@ -59,7 +59,7 @@ const Footer = () => {
         </div>
 
         <div className="text-slate-500 text-xs pt-2">
-          Mission Control v2.6 // Built with React 19 & Tailwind CSS v4. © {year} {profile?.name || 'Heng Wei Bin'}.
+          Built with React 19 & Tailwind CSS v4. © {year} {profile?.name || 'Heng Wei Bin'}.
         </div>
       </div>
     </footer>

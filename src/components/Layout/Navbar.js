@@ -101,12 +101,6 @@ export const Navbar = () => {
           >
             &gt; root@{promptName}:~$
           </Link>
-
-          {/* Operational Status Pulse */}
-          <span className="hidden md:inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-mono bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 tracking-wider">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            SYSTEM ONLINE
-          </span>
         </div>
 
         {/* Desktop Navigation Links */}
@@ -183,11 +177,7 @@ export const Navbar = () => {
           aria-label="Mobile Navigation Drawer"
         >
           <div className="flex items-center justify-between pb-2 mb-2 border-b border-cyber-border text-xs text-slate-400 font-mono">
-            <span>&gt; MISSION_CONTROL_MENU</span>
-            <span className="flex items-center gap-1 text-emerald-400">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              ONLINE
-            </span>
+            <span>&gt; NAVIGATION</span>
           </div>
 
           <div className="flex flex-col space-y-1">

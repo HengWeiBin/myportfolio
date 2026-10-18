@@ -15,7 +15,6 @@ describe('Mission Control UI & 5-Section Layout', () => {
 
     const archiveLinks = screen.getAllByRole('link', { name: /\[Archive\]/i });
     expect(archiveLinks.length).toBeGreaterThan(0);
-    expect(screen.getByText(/SYSTEM ONLINE/i)).toBeInTheDocument();
   });
 
   test('renders all 5 narrative sections on the homepage', async () => {
