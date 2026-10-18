@@ -3,11 +3,13 @@ import { Routes, Route, useNavigate, Link } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { checkSession, logout } from '../../services/auth';
+import { usePortfolio } from '../../context/ProfileContext';
 import Dashboard from './Dashboard';
 
 const AdminLayout = () => {
   const navigate = useNavigate();
   const [isAuthenticated, setIsAuthenticated] = useState(null);
+  const { refreshPortfolio } = usePortfolio();
 
   useEffect(() => {
     let isMounted = true;
@@ -73,7 +75,7 @@ const AdminLayout = () => {
       </aside>
       <main className="flex-1 p-8 overflow-y-auto">
         <Routes>
-          <Route path="dashboard" element={<Dashboard />} />
+          <Route path="dashboard" element={<Dashboard refreshPortfolio={refreshPortfolio} />} />
           <Route path="*" element={<div className="font-mono text-slate-400">select an option</div>} />
         </Routes>
       </main>

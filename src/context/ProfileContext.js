@@ -72,7 +72,12 @@ export const ProfileProvider = ({ children }) => {
 export const useProfile = () => {
   const context = useContext(ProfileContext);
   if (context === undefined) {
-    throw new Error('useProfile must be used within a ProfileProvider');
+    return {
+      profile: FALLBACK_PORTFOLIO_DATA.profile,
+      loading: false,
+      error: null,
+      refreshProfile: () => {},
+    };
   }
   return context;
 };
@@ -80,7 +85,23 @@ export const useProfile = () => {
 export const usePortfolio = () => {
   const context = useContext(ProfileContext);
   if (context === undefined) {
-    throw new Error('usePortfolio must be used within a ProfileProvider');
+    return {
+      portfolio: FALLBACK_PORTFOLIO_DATA,
+      profile: FALLBACK_PORTFOLIO_DATA.profile,
+      skills: FALLBACK_PORTFOLIO_DATA.skills,
+      projects: FALLBACK_PORTFOLIO_DATA.projects,
+      experience: FALLBACK_PORTFOLIO_DATA.experience,
+      certificates: FALLBACK_PORTFOLIO_DATA.certificates,
+      tiered_projects: FALLBACK_PORTFOLIO_DATA.tiered_projects || {},
+      tiered_certificates: FALLBACK_PORTFOLIO_DATA.tiered_certificates || {},
+      tiered: FALLBACK_PORTFOLIO_DATA.tiered || { projects: {}, certificates: {} },
+      loading: false,
+      error: null,
+      refreshPortfolio: () => {},
+      refreshProfile: () => {},
+    };
   }
   return context;
 };
+
+export { ProfileContext };

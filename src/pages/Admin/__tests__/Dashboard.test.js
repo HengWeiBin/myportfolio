@@ -434,5 +434,24 @@ describe('Dashboard Batch Save & Staging Integration', () => {
         expect(screen.getByText(/are you sure you want to delete this item\?/i)).toBeInTheDocument();
       });
     });
+
+    it('invokes refreshPortfolio callback when batch save succeeds', async () => {
+      const refreshPortfolio = vi.fn();
+      render(<Dashboard refreshPortfolio={refreshPortfolio} />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Radar Fusion')).toBeInTheDocument();
+      });
+
+      const tierSelect = screen.getByLabelText('Tier for Radar Fusion');
+      fireEvent.change(tierSelect, { target: { value: 'featured' } });
+
+      const saveBtn = screen.getByRole('button', { name: /save changes/i });
+      fireEvent.click(saveBtn);
+
+      await waitFor(() => {
+        expect(refreshPortfolio).toHaveBeenCalledTimes(1);
+      });
+    });
   });
 });

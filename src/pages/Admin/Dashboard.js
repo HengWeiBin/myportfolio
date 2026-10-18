@@ -8,6 +8,7 @@ import useStagedList from './hooks/useStagedList';
 import useNavigationGuard from './hooks/useNavigationGuard';
 import UnsavedChangesModal from './components/UnsavedChangesModal';
 import { batchUpdateItems } from './services/batchSave';
+import { usePortfolio } from '../../context/ProfileContext';
 import ProjectsTab from './components/ProjectsTab';
 import ProjectModal from './components/ProjectModal';
 import CertificatesTab from './components/CertificatesTab';
@@ -21,7 +22,9 @@ import AgentTab from './components/AgentTab';
 
 const TABS = ['projects', 'certificates', 'experience', 'profile', 'skills', 'agent'];
 
-const Dashboard = () => {
+const Dashboard = ({ refreshPortfolio: propRefreshPortfolio }) => {
+  const portfolioContext = usePortfolio();
+  const refreshPortfolio = propRefreshPortfolio || portfolioContext?.refreshPortfolio;
   const [activeTab, setActiveTab] = useState('projects');
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -48,6 +51,7 @@ const Dashboard = () => {
       setData(stagedData);
       commit(stagedData);
       toast.success('Changes saved successfully');
+      if (refreshPortfolio) refreshPortfolio();
       return true;
     } catch (e) {
       toast.error('Failed to save changes: ' + e.message);
@@ -105,6 +109,7 @@ const Dashboard = () => {
       toast.success('Item deleted successfully');
       setConfirmModal({ isOpen: false, id: null });
       fetchData();
+      if (refreshPortfolio) refreshPortfolio();
     } catch (e) { toast.error(e.message); }
   };
 
@@ -131,6 +136,7 @@ const Dashboard = () => {
       setShowModal(false);
       toast.success(`${isEdit ? 'Updated' : 'Added'} successfully`);
       fetchData();
+      if (refreshPortfolio) refreshPortfolio();
     } catch (err) {
       setUploading(false);
       toast.error('Error saving: ' + err.message);
@@ -142,6 +148,7 @@ const Dashboard = () => {
       await api.updateProfile(updated);
       toast.success('Profile updated successfully!');
       fetchData();
+      if (refreshPortfolio) refreshPortfolio();
     } catch (e) { toast.error(e.message); }
   };
 
