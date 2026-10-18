@@ -3,7 +3,7 @@ import { render, screen, fireEvent, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { getFallbackTrace, FALLBACK_TRACES } from './fallbackTraces';
 import { useClientActions } from './useClientActions';
-import { AgentProvider, useAgent } from './AgentContext';
+import AgentContext, { AgentProvider, useAgent } from './AgentContext';
 import HeroTerminal from './HeroTerminal';
 import FloatingDock from './FloatingDock';
 
@@ -181,6 +181,45 @@ describe('HeroTerminal Component', () => {
     fireEvent.click(quickBtn);
 
     expect(screen.getByTestId('hero-terminal')).toBeInTheDocument();
+  });
+
+  it('renders telemetry reasoning trace and tool calls without STATUS 200 OK label', () => {
+    const mockContextValue = {
+      messages: [
+        {
+          id: 'msg-1',
+          role: 'assistant',
+          content: 'Here are the skills.',
+          thought: 'User asked for skills. Filtering view.',
+          toolCalls: [{ tool: 'filter_skills', args: { category: 'Deep Learning' } }],
+          isStreaming: false,
+          isFallback: false,
+          timestamp: Date.now(),
+        },
+      ],
+      isStreaming: false,
+      sendMessage: vi.fn(),
+      suggestedPrompts: [],
+      rateLimitReached: false,
+      rateLimitNotice: null,
+      resetChat: vi.fn(),
+    };
+
+    render(
+      <AgentContext.Provider value={mockContextValue}>
+        <HeroTerminal />
+      </AgentContext.Provider>
+    );
+
+    const toggle = screen.getByTestId('telemetry-drawer-toggle');
+    fireEvent.click(toggle);
+
+    expect(screen.getByTestId('telemetry-thought')).toHaveTextContent('User asked for skills');
+    const toolCallElem = screen.getByTestId('telemetry-tool');
+    expect(toolCallElem).toBeInTheDocument();
+    expect(toolCallElem).toHaveTextContent('TOOL CALL:');
+    expect(toolCallElem).toHaveTextContent('filter_skills()');
+    expect(screen.queryByText(/\[STATUS: 200 OK\]/)).not.toBeInTheDocument();
   });
 });
 

@@ -149,7 +149,6 @@ const HeroTerminal = () => {
                               <span className="text-slate-500">&gt;</span>
                               <span className="font-bold text-amber-400">TOOL CALL:</span>
                               <code>{t.tool}()</code>
-                              <span className="text-emerald-400 text-[10px]">[STATUS: 200 OK]</span>
                             </div>
                           ))}
                         </div>
