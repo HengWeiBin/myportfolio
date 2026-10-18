@@ -375,3 +375,157 @@ describe('FloatingDock Component & Cmd+K Shortcut', () => {
     expect(screen.queryByTestId('floating-dock-drawer')).not.toBeInTheDocument();
   });
 });
+
+describe('Agent Markdown Rendering (react-markdown + remark-gfm)', () => {
+  it('renders markdown formatting (bold, lists, code, links, tables) in assistant replies', () => {
+    const markdownContent = `
+# Perception System
+
+Here is **bold text** and \`inline code\`.
+
+- Feature 1: Radar
+- Feature 2: Camera
+
+[Portfolio Link](https://example.com/portfolio)
+
+| Architecture | Accuracy |
+| :--- | :--- |
+| CenterFusion | 98% |
+
+\`\`\`python
+def evaluate():
+    return True
+\`\`\`
+`;
+
+    const mockContextValue = {
+      messages: [
+        {
+          id: 'assistant-md-1',
+          role: 'assistant',
+          content: markdownContent,
+          isStreaming: false,
+          isFallback: false,
+          timestamp: Date.now(),
+        },
+      ],
+      isStreaming: false,
+      sendMessage: vi.fn(),
+      suggestedPrompts: [],
+      rateLimitReached: false,
+      fallbackReason: null,
+      resetChat: vi.fn(),
+    };
+
+    render(
+      <AgentContext.Provider value={mockContextValue}>
+        <HeroTerminal />
+      </AgentContext.Provider>
+    );
+
+    const responseContainer = screen.getByTestId('agent-response-content');
+    expect(responseContainer).toBeInTheDocument();
+
+    // Bold text rendered as <strong>
+    const strongElem = responseContainer.querySelector('strong');
+    expect(strongElem).toBeInTheDocument();
+    expect(strongElem.textContent).toBe('bold text');
+
+    // Lists rendered as <ul> and <li>
+    const listItems = responseContainer.querySelectorAll('li');
+    expect(listItems.length).toBeGreaterThanOrEqual(2);
+    expect(listItems[0].textContent).toContain('Feature 1: Radar');
+
+    // Code rendered as <code>
+    const codeElems = responseContainer.querySelectorAll('code');
+    expect(codeElems.length).toBeGreaterThanOrEqual(2);
+    expect(Array.from(codeElems).some(el => el.textContent.includes('inline code'))).toBe(true);
+
+    // Pre block rendered for code block
+    const preElem = responseContainer.querySelector('pre');
+    expect(preElem).toBeInTheDocument();
+    expect(preElem.textContent).toContain('def evaluate():');
+
+    // Link rendered with target="_blank" and rel="noopener noreferrer"
+    const linkElem = responseContainer.querySelector('a');
+    expect(linkElem).toBeInTheDocument();
+    expect(linkElem.textContent).toBe('Portfolio Link');
+    expect(linkElem).toHaveAttribute('href', 'https://example.com/portfolio');
+    expect(linkElem).toHaveAttribute('target', '_blank');
+    expect(linkElem).toHaveAttribute('rel', 'noopener noreferrer');
+
+    // GFM Table rendered
+    const tableElem = responseContainer.querySelector('table');
+    expect(tableElem).toBeInTheDocument();
+    const thElems = responseContainer.querySelectorAll('th');
+    expect(thElems.length).toBe(2);
+    expect(thElems[0].textContent).toBe('Architecture');
+    const tdElems = responseContainer.querySelectorAll('td');
+    expect(tdElems[0].textContent).toBe('CenterFusion');
+  });
+
+  it('does NOT render raw HTML tags like <script> or <img onerror> as elements', () => {
+    const rawHtmlContent = 'Security test: <img src="x" onerror="window.hacked=true" /> and <script>alert(1)</script>';
+
+    const mockContextValue = {
+      messages: [
+        {
+          id: 'assistant-xss-1',
+          role: 'assistant',
+          content: rawHtmlContent,
+          isStreaming: false,
+          isFallback: false,
+          timestamp: Date.now(),
+        },
+      ],
+      isStreaming: false,
+      sendMessage: vi.fn(),
+      suggestedPrompts: [],
+      rateLimitReached: false,
+      fallbackReason: null,
+      resetChat: vi.fn(),
+    };
+
+    render(
+      <AgentContext.Provider value={mockContextValue}>
+        <HeroTerminal />
+      </AgentContext.Provider>
+    );
+
+    const responseContainer = screen.getByTestId('agent-response-content');
+    // Ensure no <img> or <script> element is in the document
+    expect(responseContainer.querySelector('img')).toBeNull();
+    expect(responseContainer.querySelector('script')).toBeNull();
+  });
+
+  it('renders typewriter cursor during streaming with markdown content', () => {
+    const mockContextValue = {
+      messages: [
+        {
+          id: 'assistant-stream-1',
+          role: 'assistant',
+          content: 'Streaming **markdown** partial...',
+          isStreaming: true,
+          isFallback: false,
+          timestamp: Date.now(),
+        },
+      ],
+      isStreaming: true,
+      sendMessage: vi.fn(),
+      suggestedPrompts: [],
+      rateLimitReached: false,
+      fallbackReason: null,
+      resetChat: vi.fn(),
+    };
+
+    render(
+      <AgentContext.Provider value={mockContextValue}>
+        <HeroTerminal />
+      </AgentContext.Provider>
+    );
+
+    expect(screen.getByTestId('typewriter-cursor')).toBeInTheDocument();
+    const responseContainer = screen.getByTestId('agent-response-content');
+    expect(responseContainer.querySelector('strong')).toBeInTheDocument();
+  });
+});

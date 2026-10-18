@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAgent } from './AgentContext';
+import AgentMarkdown from './AgentMarkdown';
 
 const FloatingDock = () => {
   const {
@@ -229,7 +230,7 @@ const FloatingDock = () => {
                           data-testid="dock-response-content"
                           className="text-slate-200 leading-relaxed"
                         >
-                          {msg.content}
+                          <AgentMarkdown content={msg.content} />
                           {msg.isStreaming && (
                             <span
                               data-testid="dock-typewriter-cursor"

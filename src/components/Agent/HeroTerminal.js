@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAgent } from './AgentContext';
+import AgentMarkdown from './AgentMarkdown';
 
 const HeroTerminal = () => {
   const {
@@ -162,7 +163,7 @@ const HeroTerminal = () => {
                     data-testid="agent-response-content"
                     className="text-slate-200 leading-relaxed pt-1"
                   >
-                    {msg.content}
+                    <AgentMarkdown content={msg.content} />
                     {msg.isStreaming && (
                       <span
                         data-testid="typewriter-cursor"
