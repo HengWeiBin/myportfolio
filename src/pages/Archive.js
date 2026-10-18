@@ -42,7 +42,8 @@ const Archive = () => {
       // 2. Tier filter
       if (tierFilter !== 'all') {
         const itemTier = (item.tier || 'standard').toLowerCase();
-        if (itemTier !== tierFilter.toLowerCase()) return false;
+        const normalizedTier = (itemTier === 'foundation' || itemTier === 'archived') ? 'archive' : itemTier;
+        if (normalizedTier !== tierFilter.toLowerCase()) return false;
       }
 
       // 3. Search query
@@ -157,7 +158,7 @@ const Archive = () => {
                 { id: 'all', label: 'All Tiers' },
                 { id: 'featured', label: 'Featured' },
                 { id: 'standard', label: 'Standard' },
-                { id: 'archive', label: 'Foundation' },
+                { id: 'archive', label: 'Archive' },
               ].map(tier => (
                 <button
                   key={tier.id}
@@ -231,7 +232,7 @@ const Archive = () => {
 
                       {item.tier && (
                         <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-cyber-panel text-slate-400 border border-cyber-border">
-                          {item.tier}
+                          {((item.tier || '').toLowerCase() === 'foundation' || (item.tier || '').toLowerCase() === 'archived') ? 'archive' : item.tier}
                         </span>
                       )}
 
