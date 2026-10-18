@@ -58,10 +58,6 @@ const Hero = () => {
             </div>
 
             <div className="flex items-center gap-3 font-mono text-xs text-slate-400">
-              <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-                STATUS: READY
-              </span>
               <span className="hidden md:inline text-slate-500">bash -- 80x24</span>
             </div>
           </header>

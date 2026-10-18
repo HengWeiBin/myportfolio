@@ -48,23 +48,23 @@ const HeroTerminal = () => {
       {/* Terminal Header */}
       <div className="bg-cyber-surface/90 px-4 py-2.5 border-b border-cyber-border flex items-center justify-between text-xs">
         <div className="flex items-center gap-2 text-slate-300">
-          <span className="w-2.5 h-2.5 rounded-full bg-cyan-electric/80 animate-ping inline-block" />
-          <span className="font-bold text-cyan-electric">AGENT // MISSION CONTROL</span>
-          <span className="text-slate-500 hidden sm:inline">v2.6-stream</span>
+          <span className="font-bold text-cyan-electric">AI ASSISTANT</span>
         </div>
 
         <div className="flex items-center gap-3">
           {rateLimitReached ? (
             <span
               data-testid="rate-limit-badge"
-              className="text-[11px] px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/40"
-            >
-              ⚠ FALLBACK MODE
-            </span>
+              className="inline-block w-2 h-2 rounded-full bg-amber-400 animate-pulse"
+              title="Fallback Mode"
+              aria-label="Fallback Mode"
+            />
           ) : (
-            <span className="text-[11px] px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
-              ● LLM ACTIVE
-            </span>
+            <span
+              className="inline-block w-2 h-2 rounded-full bg-emerald-400"
+              title="Connected"
+              aria-label="Connected"
+            />
           )}
 
           <button
@@ -83,13 +83,12 @@ const HeroTerminal = () => {
         {rateLimitReached && (
           <div
             data-testid="rate-limit-notice"
-            className="text-xs text-amber-300 bg-amber-500/10 border border-amber-500/30 px-3.5 py-2 rounded-lg flex items-center justify-between"
+            className="text-xs text-amber-300 bg-amber-500/10 border border-amber-500/30 px-3.5 py-2 rounded-lg flex items-center"
           >
             <div className="flex items-center gap-2">
               <span className="text-base">⚠</span>
               <span>{rateLimitNotice || 'Daily rate limit reached (5 requests/day). Reverting to scripted playback.'}</span>
             </div>
-            <span className="text-[10px] text-amber-400/80 uppercase tracking-wider font-bold">Auto-Switched</span>
           </div>
         )}
 

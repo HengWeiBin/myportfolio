@@ -87,7 +87,7 @@ const FloatingDock = () => {
             <div className="glass-panel-glow bg-cyber-dark/95 border border-cyan-500/40 hover:border-cyan-electric/80 rounded-full px-4 py-2 sm:px-5 sm:py-2.5 flex items-center gap-3 shadow-[0_0_25px_rgba(0,240,255,0.2)] hover:shadow-[0_0_35px_rgba(0,240,255,0.4)] transition-all group">
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
               <span className="text-xs sm:text-sm font-bold text-slate-200 group-hover:text-cyan-electric flex items-center gap-1.5 transition-colors">
-                <span>🤖 AI Mission Control</span>
+                <span>🤖 AI ASSISTANT</span>
               </span>
               <kbd className="hidden sm:inline-block px-1.5 py-0.5 text-[10px] bg-cyber-card text-slate-400 border border-cyber-border rounded font-mono shadow-inner">
                 ⌘K / Ctrl+K
