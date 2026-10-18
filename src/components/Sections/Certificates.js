@@ -37,12 +37,33 @@ const Certificates = () => {
     }
   };
 
-  const sortedAchievements = [...achievements].sort((a, b) => {
+  const normalizeTier = (tier) => {
+    const t = (tier || 'standard').toLowerCase();
+    if (t === 'foundation' || t === 'archived') return 'archive';
+    return t;
+  };
+
+  const visibleCertificates = achievements.filter(
+    (item) => normalizeTier(item.tier) !== 'archive'
+  );
+
+  const hasFeatured = visibleCertificates.some(
+    (item) => normalizeTier(item.tier) === 'featured'
+  );
+
+  const sortedAchievements = [...visibleCertificates].sort((a, b) => {
     const score = (type) => {
       if (type === 'Paper') return 3;
       if (type === 'Competition') return 2;
       return 1;
     };
+
+    if (hasFeatured) {
+      const tierRank = (item) => (normalizeTier(item.tier) === 'featured' ? 1 : 0);
+      const tierDiff = tierRank(b) - tierRank(a);
+      if (tierDiff !== 0) return tierDiff;
+    }
+
     return score(getCategory(b)) - score(getCategory(a));
   });
 
