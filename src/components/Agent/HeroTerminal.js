@@ -48,7 +48,7 @@ const HeroTerminal = () => {
       {/* Terminal Header */}
       <div className="bg-cyber-surface/90 px-4 py-2.5 border-b border-cyber-border flex items-center justify-between text-xs">
         <div className="flex items-center gap-2 text-slate-300">
-          <span className="font-bold text-cyan-electric">AI ASSISTANT</span>
+          <span className="font-bold text-cyan-electric">PORTFOLIO ASSISTANT</span>
         </div>
 
         <div className="flex items-center gap-3">
