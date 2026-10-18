@@ -910,16 +910,21 @@ exports.handler = async (event) => {
   // 4. Guardrail Evaluation
   const safetyCategory = classifyPromptSafety(prompt);
   const isChinese = /[\u4e00-\u9fa5]/.test(prompt);
+  let responseSource = 'llm';
+  let fallbackReason = null;
 
   if (safetyCategory === 'injection') {
+    responseSource = 'guardrail';
     responseText = isChinese
       ? "我無法執行嘗試覆蓋系統指令或洩漏敏感金鑰的請求。我是專為介紹工程師的作品集、經歷與專案而設計的 AI 助手。"
       : "I cannot fulfill requests attempting to override system instructions or expose sensitive credentials. I am here to discuss the engineer's portfolio, background, and projects.";
   } else if (safetyCategory === 'off_topic') {
+    responseSource = 'guardrail';
     responseText = isChinese
       ? "我是專門為此工程師服務的作品集助手。我只能回答有關其專業背景、專案、技能、經歷和認證的問題。請問有什麼我可以協助您探索作品集的嗎？"
       : "I am a dedicated portfolio assistant for this engineer. I can only assist with questions regarding their professional background, projects, skills, experience, and certifications. How can I help you explore their portfolio?";
   } else if (safetyCategory === 'nda') {
+    responseSource = 'guardrail';
     responseText = isChinese
       ? "部分專案細節、專有架構及生產指標受保密協定（NDA）保護。請直接透過電子郵件或 LinkedIn 與工程師聯繫以進行進一步洽詢。"
       : "Certain project details, proprietary architectures, and production metrics are protected under Non-Disclosure Agreements (NDA). Please contact the engineer directly via email or LinkedIn for deeper discussions or authorized inquiries.";
@@ -944,11 +949,14 @@ exports.handler = async (event) => {
 
     if (llmResult && llmResult.text) {
       responseText = llmResult.text;
+      responseSource = 'llm';
       if (llmResult.tokensUsed) {
         tokensUsed = llmResult.tokensUsed;
       }
     } else {
       responseText = generateFallbackResponse(toolTrace, prompt);
+      responseSource = 'fallback';
+      fallbackReason = (!llmConfig || !llmConfig.apiKey) ? 'no_key' : 'llm_error';
     }
   }
 
@@ -966,11 +974,16 @@ exports.handler = async (event) => {
   const latencyMs = Date.now() - startTime;
 
   // 7. Emit stream completion
-  sseOutput += sseFrame('done', {
+  const donePayload = {
     tokens_used: tokensUsed,
     latency_ms: latencyMs,
-    session_id: sessionId
-  });
+    session_id: sessionId,
+    source: responseSource,
+  };
+  if (fallbackReason) {
+    donePayload.reason = fallbackReason;
+  }
+  sseOutput += sseFrame('done', donePayload);
 
   // 8. Log telemetry to conversations & update agent_usage token count
   if (sql) {

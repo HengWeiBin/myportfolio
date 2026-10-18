@@ -221,6 +221,104 @@ describe('HeroTerminal Component', () => {
     expect(toolCallElem).toHaveTextContent('filter_skills()');
     expect(screen.queryByText(/\[STATUS: 200 OK\]/)).not.toBeInTheDocument();
   });
+
+  it('renders green LED Connected tooltip when healthy and amber LED with reasons when degraded', () => {
+    // 1. Healthy connected state
+    const { unmount } = render(
+      <AgentContext.Provider value={{
+        messages: [],
+        isStreaming: false,
+        sendMessage: vi.fn(),
+        suggestedPrompts: [],
+        rateLimitReached: false,
+        fallbackReason: null,
+        resetChat: vi.fn(),
+      }}>
+        <HeroTerminal />
+      </AgentContext.Provider>
+    );
+
+    const greenLed = screen.getByTitle('Connected');
+    expect(greenLed).toBeInTheDocument();
+    expect(greenLed).toHaveAttribute('aria-label', 'Connected');
+    expect(screen.queryByTestId('rate-limit-badge')).not.toBeInTheDocument();
+    unmount();
+
+    // 2. Degraded state with no API key
+    const { unmount: unmount2 } = render(
+      <AgentContext.Provider value={{
+        messages: [],
+        isStreaming: false,
+        sendMessage: vi.fn(),
+        suggestedPrompts: [],
+        rateLimitReached: true,
+        fallbackReason: 'no API key',
+        resetChat: vi.fn(),
+      }}>
+        <HeroTerminal />
+      </AgentContext.Provider>
+    );
+
+    const amberLed1 = screen.getByTestId('rate-limit-badge');
+    expect(amberLed1).toHaveAttribute('title', 'Fallback Mode: no API key');
+    expect(amberLed1).toHaveAttribute('aria-label', 'Fallback Mode: no API key');
+    unmount2();
+
+    // 3. Degraded state with rate limit
+    render(
+      <AgentContext.Provider value={{
+        messages: [],
+        isStreaming: false,
+        sendMessage: vi.fn(),
+        suggestedPrompts: [],
+        rateLimitReached: true,
+        fallbackReason: 'rate limit',
+        resetChat: vi.fn(),
+      }}>
+        <HeroTerminal />
+      </AgentContext.Provider>
+    );
+
+    const amberLed2 = screen.getByTestId('rate-limit-badge');
+    expect(amberLed2).toHaveAttribute('title', 'Fallback Mode: rate limit');
+    expect(amberLed2).toHaveAttribute('aria-label', 'Fallback Mode: rate limit');
+  });
+
+  it('switches to fallback mode and shows scripted badge on done event with source "fallback"', async () => {
+    const encoder = new TextEncoder();
+    const stream = new ReadableStream({
+      start(controller) {
+        controller.enqueue(encoder.encode('event: token\ndata: {"token":"This is fallback"}\n\n'));
+        controller.enqueue(encoder.encode('event: done\ndata: {"tokens_used":4,"source":"fallback","reason":"no_key"}\n\n'));
+        controller.close();
+      }
+    });
+
+    const mockFetch = vi.spyOn(global, 'fetch').mockResolvedValue({
+      ok: true,
+      body: stream,
+    });
+
+    render(
+      <AgentProvider>
+        <HeroTerminal />
+      </AgentProvider>
+    );
+
+    const input = screen.getByTestId('hero-terminal-input');
+    await act(async () => {
+      fireEvent.change(input, { target: { value: 'Hello' } });
+      fireEvent.click(screen.getByTestId('hero-terminal-submit'));
+    });
+
+    const amberBadge = await screen.findByTestId('rate-limit-badge');
+    expect(amberBadge).toBeInTheDocument();
+    expect(amberBadge).toHaveAttribute('title', 'Fallback Mode: no API key');
+    expect(amberBadge).toHaveAttribute('aria-label', 'Fallback Mode: no API key');
+    expect(await screen.findByText('scripted')).toBeInTheDocument();
+
+    mockFetch.mockRestore();
+  });
 });
 
 describe('FloatingDock Component & Cmd+K Shortcut', () => {

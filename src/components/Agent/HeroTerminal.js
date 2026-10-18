@@ -8,6 +8,7 @@ const HeroTerminal = () => {
     sendMessage,
     suggestedPrompts,
     rateLimitReached,
+    fallbackReason,
     rateLimitNotice,
     resetChat
   } = useAgent();
@@ -56,8 +57,8 @@ const HeroTerminal = () => {
             <span
               data-testid="rate-limit-badge"
               className="inline-block w-2 h-2 rounded-full bg-amber-400 animate-pulse"
-              title="Fallback Mode"
-              aria-label="Fallback Mode"
+              title={`Fallback Mode: ${fallbackReason || 'rate limit'}`}
+              aria-label={`Fallback Mode: ${fallbackReason || 'rate limit'}`}
             />
           ) : (
             <span

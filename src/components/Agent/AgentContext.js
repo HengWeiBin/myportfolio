@@ -31,6 +31,7 @@ export const AgentProvider = ({ children }) => {
   const [activeSkillFilter, setActiveSkillFilter] = useState(null);
   const [rateLimitReached, setRateLimitReached] = useState(false);
   const [rateLimitNotice, setRateLimitNotice] = useState(null);
+  const [fallbackReason, setFallbackReason] = useState(null);
 
   const activeTimerRef = useRef(null);
   const playbackTimerRef = activeTimerRef;
@@ -198,8 +199,10 @@ export const AgentProvider = ({ children }) => {
       if (!response.ok) {
         setRateLimitReached(true);
         if (response.status === 429) {
+          setFallbackReason('rate limit');
           setRateLimitNotice('Daily limit of 5 requests reached. Switched gracefully to scripted playback.');
         } else {
+          setFallbackReason('offline');
           setRateLimitNotice('AI service offline / local mode. Switched gracefully to demo playback.');
         }
         runScriptedPlayback(trimmed, assistantMessageId);
@@ -245,6 +248,7 @@ export const AgentProvider = ({ children }) => {
 
             if (event === 'error') {
               setRateLimitReached(true);
+              setFallbackReason('rate limit');
               setRateLimitNotice(
                 typeof dataObj === 'object' && dataObj?.message
                   ? dataObj.message
@@ -290,9 +294,24 @@ export const AgentProvider = ({ children }) => {
               }));
             } else if (event === 'done') {
               isDone = true;
+              const isFallbackSource = dataObj?.source === 'fallback';
+              if (isFallbackSource) {
+                setRateLimitReached(true);
+                const reasonCode = dataObj?.reason;
+                const reasonText = reasonCode === 'no_key'
+                  ? 'no API key'
+                  : reasonCode === 'llm_error'
+                  ? 'LLM error'
+                  : (reasonCode || 'rate limit');
+                setFallbackReason(reasonText);
+              }
               setMessages(prev => prev.map(msg => {
                 if (msg.id === assistantMessageId) {
-                  return { ...msg, isStreaming: false };
+                  return {
+                    ...msg,
+                    isStreaming: false,
+                    ...(isFallbackSource ? { isFallback: true } : {})
+                  };
                 }
                 return msg;
               }));
@@ -305,15 +324,19 @@ export const AgentProvider = ({ children }) => {
         const text = await response.text();
         if (text.includes('RATE_LIMIT_EXCEEDED')) {
           setRateLimitReached(true);
+          setFallbackReason('rate limit');
           setRateLimitNotice('Daily limit of 5 requests hit. Switched gracefully to scripted playback.');
           runScriptedPlayback(trimmed, assistantMessageId);
         } else {
+          setRateLimitReached(true);
+          setFallbackReason('offline');
           runScriptedPlayback(trimmed, assistantMessageId);
         }
       }
     } catch (err) {
       console.warn('[AgentContext] Chat request failed, initiating scripted fallback:', err.message);
       setRateLimitReached(true);
+      setFallbackReason('offline');
       setRateLimitNotice('AI service offline / local mode. Switched gracefully to demo playback.');
       runScriptedPlayback(trimmed, assistantMessageId);
     }
@@ -346,6 +369,8 @@ export const AgentProvider = ({ children }) => {
     clearHighlights,
     rateLimitReached,
     setRateLimitReached,
+    fallbackReason,
+    setFallbackReason,
     rateLimitNotice,
     suggestedPrompts: SUGGESTED_PROMPTS,
     sendMessage,
@@ -382,6 +407,8 @@ export const useAgent = () => {
     clearHighlights: () => {},
     rateLimitReached: false,
     setRateLimitReached: () => {},
+    fallbackReason: null,
+    setFallbackReason: () => {},
     rateLimitNotice: null,
     suggestedPrompts: SUGGESTED_PROMPTS,
     sendMessage: () => {},
