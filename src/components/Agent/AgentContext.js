@@ -14,7 +14,7 @@ export const SUGGESTED_PROMPTS = [
 const INITIAL_MESSAGE = {
   id: 'init-msg-0',
   role: 'assistant',
-  content: "Mission Control Standby. I am Wayne's AI Portfolio Assistant. Ask me about his machine learning research, 3D perception architectures, technical arsenal, or career timeline.",
+  content: "I am Wayne's AI Portfolio Assistant. Ask me about his machine learning research, 3D perception architectures, technical arsenal, or career timeline.",
   thought: 'Agent initialized in Mission Control environment. Ready for directive.',
   toolCalls: [],
   isStreaming: false,
