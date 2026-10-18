@@ -39,7 +39,7 @@ const ProjectModal = ({ isOpen, isEdit, initialData = {}, onClose, onSave, uploa
       link: initialData.link || '',
       date_start: initialData.date_start || '',
       date_end: initialData.date_end || '',
-      tier: initialData.tier || 'standard',
+      tier: (initialData.tier === 'foundation' || initialData.tier === 'archived') ? 'archive' : (initialData.tier || 'standard'),
       sort_order: initialData.sort_order ?? 0,
       visual_type: initialData.visual_type || 'image',
       repo_visibility: initialData.repo_visibility || 'public',
@@ -139,7 +139,6 @@ const ProjectModal = ({ isOpen, isEdit, initialData = {}, onClose, onSave, uploa
               options={[
                 { value: 'featured', label: 'Featured' },
                 { value: 'standard', label: 'Standard' },
-                { value: 'foundation', label: 'Foundation' },
                 { value: 'archive', label: 'Archive' },
               ]}
             />

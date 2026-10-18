@@ -53,7 +53,7 @@ const ProjectsTab = ({
             <span className="text-xs font-mono font-normal text-slate-400">({displayProjects.length})</span>
           </h2>
           <p className="text-xs font-mono text-slate-400 mt-0.5">
-            Manage case studies, tiers (featured/foundation/archive), and NDA protections
+            Manage case studies, tiers (featured/standard/archive), and NDA protections
           </p>
         </div>
         <AdminButton onClick={onAdd} size="sm">
@@ -111,13 +111,12 @@ const ProjectsTab = ({
                       <div className="flex items-center gap-2">
                         <select
                           aria-label={`Tier for ${item.title}`}
-                          value={item.tier || 'standard'}
+                          value={item.tier === 'foundation' || item.tier === 'archived' ? 'archive' : (item.tier || 'standard')}
                           onChange={(e) => handleTierChange(item, e.target.value)}
                           className="bg-cyber-card border border-cyber-border rounded px-2 py-1 text-xs text-slate-200 font-mono focus:border-cyan-electric focus:outline-none"
                         >
                           <option value="featured">Featured</option>
                           <option value="standard">Standard</option>
-                          <option value="foundation">Foundation</option>
                           <option value="archive">Archive</option>
                         </select>
                         <TierBadge tier={item.tier} />

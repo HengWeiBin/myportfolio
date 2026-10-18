@@ -422,8 +422,8 @@ test.describe('Admin Panel', () => {
       // Test instant tier switching via dropdown
       const tierSelect = page.locator('select[aria-label="Tier for Autonomous Radar Perception"]');
       await expect(tierSelect).toBeVisible();
-      projectsList[0].tier = 'foundation';
-      await tierSelect.selectOption('foundation');
+      projectsList[0].tier = 'archive';
+      await tierSelect.selectOption('archive');
 
       const floatingBar = page.getByTestId('floating-action-bar');
       await expect(floatingBar).toBeVisible();
@@ -563,7 +563,7 @@ test.describe('Admin Panel', () => {
           title: 'Edge Deployment C',
           description: 'Embedded runtime model',
           link: 'https://example.com/c',
-          tier: 'foundation',
+          tier: 'archive',
           sort_order: 2,
         }
       ];

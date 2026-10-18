@@ -112,4 +112,38 @@ describe('ProjectsTab', () => {
 
     expect(onUpdateField).toHaveBeenCalledWith('1', 'tier', 'featured');
   });
+
+  it('renders only 3 canonical tier options (featured, standard, archive) and no foundation', () => {
+    render(
+      <ProjectsTab
+        data={sampleProjects}
+        onAdd={vi.fn()}
+        onEdit={vi.fn()}
+        onDelete={vi.fn()}
+      />
+    );
+
+    const select = screen.getByLabelText('Tier for Alpha Project');
+    const options = Array.from(select.querySelectorAll('option')).map((o) => o.value);
+    expect(options).toEqual(['featured', 'standard', 'archive']);
+    expect(options).not.toContain('foundation');
+  });
+
+  it('normalizes legacy foundation tier to archive in select value', () => {
+    const legacyProjects = [
+      { id: '99', title: 'Legacy Foundation Project', tier: 'foundation', sort_order: 0 },
+    ];
+
+    render(
+      <ProjectsTab
+        data={legacyProjects}
+        onAdd={vi.fn()}
+        onEdit={vi.fn()}
+        onDelete={vi.fn()}
+      />
+    );
+
+    const select = screen.getByLabelText('Tier for Legacy Foundation Project');
+    expect(select.value).toBe('archive');
+  });
 });
