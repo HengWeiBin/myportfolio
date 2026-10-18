@@ -95,4 +95,38 @@ describe('CertificatesTab', () => {
 
     expect(onUpdateField).toHaveBeenCalledWith('10', 'tier', 'featured');
   });
+
+  it('renders only 3 canonical tier options (featured, standard, archive) and no foundation', () => {
+    render(
+      <CertificatesTab
+        data={sampleCertificates}
+        onAdd={vi.fn()}
+        onEdit={vi.fn()}
+        onDelete={vi.fn()}
+      />
+    );
+
+    const select = screen.getByLabelText('Tier for Deep Learning Specialization');
+    const options = Array.from(select.querySelectorAll('option')).map((o) => o.value);
+    expect(options).toEqual(['featured', 'standard', 'archive']);
+    expect(options).not.toContain('foundation');
+  });
+
+  it('normalizes legacy foundation tier to archive in select value', () => {
+    const legacyCerts = [
+      { id: '99', title: 'Legacy Foundation Cert', tier: 'foundation', sort_order: 0 },
+    ];
+
+    render(
+      <CertificatesTab
+        data={legacyCerts}
+        onAdd={vi.fn()}
+        onEdit={vi.fn()}
+        onDelete={vi.fn()}
+      />
+    );
+
+    const select = screen.getByLabelText('Tier for Legacy Foundation Cert');
+    expect(select.value).toBe('archive');
+  });
 });

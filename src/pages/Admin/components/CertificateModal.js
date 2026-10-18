@@ -35,7 +35,7 @@ const CertificateModal = ({
       date: initialData.date || '',
       credential_id: initialData.credential_id || '',
       category: initialData.category || 'Certificate',
-      tier: initialData.tier || 'standard',
+      tier: (initialData.tier === 'foundation' || initialData.tier === 'archived') ? 'archive' : (initialData.tier || 'standard'),
       sort_order: initialData.sort_order ?? 0,
     });
     setImagePreview(initialData.image_url || null);
@@ -131,7 +131,6 @@ const CertificateModal = ({
               options={[
                 { value: 'featured', label: 'Featured' },
                 { value: 'standard', label: 'Standard' },
-                { value: 'foundation', label: 'Foundation' },
                 { value: 'archive', label: 'Archive' },
               ]}
             />

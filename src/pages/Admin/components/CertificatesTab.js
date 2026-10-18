@@ -123,13 +123,12 @@ const CertificatesTab = ({
                       <div className="flex items-center gap-2">
                         <select
                           aria-label={`Tier for ${item.title}`}
-                          value={item.tier || 'standard'}
+                          value={item.tier === 'foundation' || item.tier === 'archived' ? 'archive' : (item.tier || 'standard')}
                           onChange={(e) => handleTierChange(item, e.target.value)}
                           className="bg-cyber-card border border-cyber-border rounded px-2 py-1 text-xs text-slate-200 font-mono focus:border-cyan-electric focus:outline-none"
                         >
                           <option value="featured">Featured</option>
                           <option value="standard">Standard</option>
-                          <option value="foundation">Foundation</option>
                           <option value="archive">Archive</option>
                         </select>
                         <TierBadge tier={item.tier} />
