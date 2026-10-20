@@ -29,7 +29,7 @@ export const FALLBACK_PROJECTS = [
     tags: ['Python', 'PyTorch', 'Sensor Fusion', 'LiDAR', 'ROS2', 'CUDA'],
     tier: 'featured',
     sort_order: 1,
-    visual_type: 'ResultViz',
+    visual_type: 'image',
     is_confidential: false,
     repo_visibility: 'public',
     metrics: { latency: '12ms', mAP: '84.6%', fps: '60 FPS' }
@@ -45,7 +45,7 @@ export const FALLBACK_PROJECTS = [
     tags: ['C++', 'TensorRT', 'CUDA', 'Autonomous Driving', 'PyTorch'],
     tier: 'featured',
     sort_order: 2,
-    visual_type: 'NeuralArch',
+    visual_type: 'image',
     is_confidential: false,
     repo_visibility: 'public',
     metrics: { fps: '60 FPS', precision: '92.4%' }
@@ -61,7 +61,7 @@ export const FALLBACK_PROJECTS = [
     tags: ['Python', 'FastAPI', 'PostgreSQL', 'Docker'],
     tier: 'standard',
     sort_order: 3,
-    visual_type: 'CodeBlock',
+    visual_type: 'image',
     is_confidential: false,
     repo_visibility: 'public',
     metrics: { uptime: '99.9%' }

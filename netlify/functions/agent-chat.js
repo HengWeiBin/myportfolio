@@ -112,7 +112,7 @@ async function executeTool(toolName, params = {}, sql) {
             tags: ['Python', 'PyTorch', 'Sensor Fusion', 'LiDAR', 'ROS2'],
             tier: 'featured',
             sort_order: 1,
-            visual_type: 'ResultViz',
+            visual_type: 'image',
             is_confidential: false,
             repo_visibility: 'public',
             metrics: { latency: '12ms', mAP: '84.6%' }
@@ -128,7 +128,7 @@ async function executeTool(toolName, params = {}, sql) {
             tags: ['C++', 'TensorRT', 'CUDA', 'Autonomous Driving'],
             tier: 'featured',
             sort_order: 2,
-            visual_type: 'NeuralArch',
+            visual_type: 'image',
             is_confidential: false,
             repo_visibility: 'public',
             metrics: { fps: '60 FPS' }
@@ -144,7 +144,7 @@ async function executeTool(toolName, params = {}, sql) {
             tags: ['Python', 'FastAPI', 'PostgreSQL'],
             tier: 'standard',
             sort_order: 3,
-            visual_type: 'CodeBlock',
+            visual_type: 'image',
             is_confidential: false,
             repo_visibility: 'public',
             metrics: {}

@@ -127,6 +127,7 @@ exports.handler = async (event) => {
       case 'createProject': {
         const { title, description, link, date_start, date_end, image_url, tags, tier, sort_order, visual_type, is_confidential, repo_visibility, metrics } = data;
         const serializedMetrics = typeof metrics === 'object' && metrics !== null ? JSON.stringify(metrics) : (metrics || '{}');
+        const normalizedTags = Array.isArray(tags) ? tags : (typeof tags === 'string' ? tags.split(',').map((s) => s.trim()).filter(Boolean) : []);
         result = await sql`
           INSERT INTO projects (title, description, link, date_start, date_end, image_url, tags, tier, sort_order, visual_type, is_confidential, repo_visibility, metrics)
           VALUES (
@@ -136,7 +137,7 @@ exports.handler = async (event) => {
             ${date_start || ''}, 
             ${date_end || ''}, 
             ${image_url || null}, 
-            ${tags || []}, 
+            ${normalizedTags}, 
             ${tier || 'standard'}, 
             ${sort_order !== undefined ? Number(sort_order) : 0}, 
             ${visual_type || 'image'}, 
@@ -152,6 +153,7 @@ exports.handler = async (event) => {
         if (!id) throw new Error('Project id is required for update');
         const { title, description, link, date_start, date_end, image_url, tags, tier, sort_order, visual_type, is_confidential, repo_visibility, metrics } = data;
         const serializedMetrics = typeof metrics === 'object' && metrics !== null ? JSON.stringify(metrics) : (metrics || '{}');
+        const normalizedTags = Array.isArray(tags) ? tags : (typeof tags === 'string' ? tags.split(',').map((s) => s.trim()).filter(Boolean) : []);
         result = await sql`
           UPDATE projects 
           SET title = ${title}, 
@@ -160,7 +162,7 @@ exports.handler = async (event) => {
               date_start = ${date_start || ''}, 
               date_end = ${date_end || ''}, 
               image_url = ${image_url || null}, 
-              tags = ${tags || []}, 
+              tags = ${normalizedTags}, 
               tier = ${tier || 'standard'}, 
               sort_order = ${sort_order !== undefined ? Number(sort_order) : 0}, 
               visual_type = ${visual_type || 'image'}, 
