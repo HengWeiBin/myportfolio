@@ -464,7 +464,7 @@ describe('Dashboard Batch Save & Staging Integration', () => {
   });
 
   describe('Modal Editing & ID Preservation', () => {
-    it('opens project edit modal, updates visual_type, preserves id and calls api.updateProject', async () => {
+    it('opens project edit modal, updates tags, preserves id and calls api.updateProject', async () => {
       render(<Dashboard />);
 
       await waitFor(() => {
@@ -483,9 +483,9 @@ describe('Dashboard Batch Save & Staging Integration', () => {
       const modal = screen.getByText(/edit projects/i).closest('.fixed');
       expect(modal).toBeInTheDocument();
 
-      // Change Visual Type to NeuralArch
-      const visualTypeSelect = screen.getByLabelText(/visual type/i);
-      fireEvent.change(visualTypeSelect, { target: { value: 'NeuralArch' } });
+      // Change Tags to comma-separated list
+      const tagsInput = screen.getByLabelText(/tags/i);
+      fireEvent.change(tagsInput, { target: { value: 'Python, PyTorch, ROS2, CUDA' } });
 
       // Submit form in modal
       const form = modal.querySelector('form');
@@ -499,7 +499,7 @@ describe('Dashboard Batch Save & Staging Integration', () => {
         '1',
         expect.objectContaining({
           id: '1',
-          visual_type: 'NeuralArch',
+          tags: ['Python', 'PyTorch', 'ROS2', 'CUDA'],
         })
       );
       expect(toast.success).toHaveBeenCalledWith('Updated successfully');

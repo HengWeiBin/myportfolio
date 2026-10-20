@@ -7,20 +7,18 @@ import { FormInput, FormSelect, FormTextarea, AdminButton, ImageDropzone } from 
  * Split-screen Markdown editing with live styling preview and NDA metadata management.
  * Strictly under 250 LOC.
  */
+const formatTags = (tags) => {
+  if (Array.isArray(tags)) return tags.join(', ');
+  if (typeof tags === 'string') return tags;
+  return '';
+};
+
 const ProjectModal = ({ isOpen, isEdit, initialData = {}, onClose, onSave, uploading }) => {
   const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    link: '',
-    date_start: '',
-    date_end: '',
-    tier: 'standard',
-    sort_order: 0,
-    visual_type: 'image',
-    repo_visibility: 'public',
-    is_confidential: false,
-    metrics: '{}',
-    ...initialData,
+    title: '', description: '', link: '', date_start: '', date_end: '',
+    tier: 'standard', sort_order: 0, repo_visibility: 'public',
+    is_confidential: false, metrics: '{}', ...initialData,
+    tags: formatTags(initialData.tags),
   });
 
   const [selectedFile, setSelectedFile] = useState(null);
@@ -39,7 +37,7 @@ const ProjectModal = ({ isOpen, isEdit, initialData = {}, onClose, onSave, uploa
       date_end: initialData.date_end || '',
       tier: (initialData.tier === 'foundation' || initialData.tier === 'archived') ? 'archive' : (initialData.tier || 'standard'),
       sort_order: initialData.sort_order ?? 0,
-      visual_type: initialData.visual_type || 'image',
+      tags: formatTags(initialData.tags),
       repo_visibility: initialData.repo_visibility || 'public',
       is_confidential: Boolean(initialData.is_confidential),
       metrics: metricsStr,
@@ -61,19 +59,20 @@ const ProjectModal = ({ isOpen, isEdit, initialData = {}, onClose, onSave, uploa
     e.preventDefault();
     let parsedMetrics = {};
     if (typeof formData.metrics === 'string' && formData.metrics.trim()) {
-      try {
-        parsedMetrics = JSON.parse(formData.metrics);
-      } catch {
-        parsedMetrics = formData.metrics;
-      }
+      try { parsedMetrics = JSON.parse(formData.metrics); } catch { parsedMetrics = formData.metrics; }
     } else if (typeof formData.metrics === 'object') {
       parsedMetrics = formData.metrics;
     }
+
+    const parsedTags = typeof formData.tags === 'string'
+      ? formData.tags.split(',').map((s) => s.trim()).filter(Boolean)
+      : (Array.isArray(formData.tags) ? formData.tags : []);
 
     onSave({
       ...formData,
       ...(initialData.id ? { id: initialData.id } : {}),
       sort_order: Number(formData.sort_order) || 0,
+      tags: parsedTags,
       is_confidential: Boolean(formData.is_confidential),
       metrics: parsedMetrics,
       file: selectedFile,
@@ -151,17 +150,12 @@ const ProjectModal = ({ isOpen, isEdit, initialData = {}, onClose, onSave, uploa
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <FormSelect
-              id="visual_type"
-              label="Visual Type"
-              value={formData.visual_type}
-              onChange={(e) => setFormData({ ...formData, visual_type: e.target.value })}
-              options={[
-                { value: 'image', label: 'Image (Standard)' },
-                { value: 'ResultViz', label: 'ResultViz (Confidence BBox)' },
-                { value: 'CodeBlock', label: 'CodeBlock (Interactive Code)' },
-                { value: 'NeuralArch', label: 'NeuralArch (Layer Graph)' },
-              ]}
+            <FormInput
+              id="tags"
+              label="Tags (comma-separated)"
+              placeholder="e.g. Python, PyTorch, ROS2, CUDA"
+              value={formData.tags}
+              onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
             />
             <FormSelect
               label="Repo Visibility"

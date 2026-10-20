@@ -84,42 +84,50 @@ export const callAdminCrud = async (action, data = {}, id = null) => {
 export const addProject = async (project) => {
   const tier = project.tier || 'standard';
   const sort_order = project.sort_order !== undefined && project.sort_order !== '' ? Number(project.sort_order) : 0;
-  const visual_type = project.visual_type || 'image';
   const is_confidential = Boolean(project.is_confidential);
   const repo_visibility = project.repo_visibility || 'public';
   const metrics = typeof project.metrics === 'object' && project.metrics !== null 
     ? project.metrics 
     : (project.metrics || {});
+  const tags = Array.isArray(project.tags)
+    ? project.tags
+    : (typeof project.tags === 'string'
+      ? project.tags.split(',').map((s) => s.trim()).filter(Boolean)
+      : []);
 
   return await callAdminCrud('addProject', {
     ...project,
     tier,
     sort_order,
-    visual_type,
     is_confidential,
     repo_visibility,
-    metrics
+    metrics,
+    tags
   });
 };
 
 export const updateProject = async (id, project) => {
   const tier = project.tier || 'standard';
   const sort_order = project.sort_order !== undefined && project.sort_order !== '' ? Number(project.sort_order) : 0;
-  const visual_type = project.visual_type || 'image';
   const is_confidential = Boolean(project.is_confidential);
   const repo_visibility = project.repo_visibility || 'public';
   const metrics = typeof project.metrics === 'object' && project.metrics !== null 
     ? project.metrics 
     : (project.metrics || {});
+  const tags = Array.isArray(project.tags)
+    ? project.tags
+    : (typeof project.tags === 'string'
+      ? project.tags.split(',').map((s) => s.trim()).filter(Boolean)
+      : []);
 
   return await callAdminCrud('updateProject', {
     ...project,
     tier,
     sort_order,
-    visual_type,
     is_confidential,
     repo_visibility,
-    metrics
+    metrics,
+    tags
   }, id);
 };
 
