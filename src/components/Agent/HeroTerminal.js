@@ -16,26 +16,50 @@ const HeroTerminal = () => {
 
   const [inputVal, setInputVal] = useState('');
   const [showTelemetry, setShowTelemetry] = useState(false);
-  const messagesEndRef = useRef(null);
+  const terminalRef = useRef(null);
+  const containerRef = useRef(null);
   const inputRef = useRef(null);
 
-  // Auto-scroll to latest response
+  // Auto-scroll strictly inside conversation container
   useEffect(() => {
-    if (typeof messagesEndRef.current?.scrollIntoView === 'function') {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    if (containerRef.current) {
+      try {
+        if (typeof containerRef.current.scrollTo === 'function') {
+          containerRef.current.scrollTo({
+            top: containerRef.current.scrollHeight,
+            behavior: 'smooth'
+          });
+        } else {
+          containerRef.current.scrollTop = containerRef.current.scrollHeight;
+        }
+      } catch {
+        containerRef.current.scrollTop = containerRef.current.scrollHeight;
+      }
     }
   }, [messages, isStreaming]);
+
+  const scrollTerminalIntoView = () => {
+    if (typeof terminalRef.current?.scrollIntoView === 'function') {
+      try {
+        terminalRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      } catch {
+        terminalRef.current.scrollIntoView();
+      }
+    }
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!inputVal.trim() || isStreaming) return;
     sendMessage(inputVal);
     setInputVal('');
+    scrollTerminalIntoView();
   };
 
   const handlePromptClick = (query) => {
     if (isStreaming) return;
     sendMessage(query);
+    scrollTerminalIntoView();
   };
 
   // Find latest assistant message
@@ -44,6 +68,7 @@ const HeroTerminal = () => {
 
   return (
     <div
+      ref={terminalRef}
       data-testid="hero-terminal"
       className="w-full bg-cyber-dark/85 border border-cyan-500/30 rounded-xl overflow-hidden shadow-[0_0_25px_rgba(0,240,255,0.08)] backdrop-blur-md font-mono"
     >
@@ -95,7 +120,7 @@ const HeroTerminal = () => {
         )}
 
         {/* Conversation Stream Output */}
-        <div className="space-y-3 max-h-72 overflow-y-auto pr-2 custom-scrollbar">
+        <div ref={containerRef} className="space-y-3 max-h-72 overflow-y-auto pr-2 custom-scrollbar">
           {messages.map((msg) => (
             <div key={msg.id} className="text-xs sm:text-sm">
               {msg.role === 'user' ? (
@@ -175,7 +200,6 @@ const HeroTerminal = () => {
               )}
             </div>
           ))}
-          <div ref={messagesEndRef} />
         </div>
 
         {/* Suggested Quick Prompts */}

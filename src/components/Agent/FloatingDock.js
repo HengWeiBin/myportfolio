@@ -22,7 +22,7 @@ const FloatingDock = () => {
   const [inputVal, setInputVal] = useState('');
   const [showTelemetry, setShowTelemetry] = useState(false);
   const inputRef = useRef(null);
-  const messagesEndRef = useRef(null);
+  const containerRef = useRef(null);
 
   // Global Cmd+K / Ctrl+K keyboard shortcut listener
   useEffect(() => {
@@ -48,10 +48,21 @@ const FloatingDock = () => {
     }
   }, [isDockOpen]);
 
-  // Auto-scroll chat drawer
+  // Auto-scroll chat drawer strictly inside conversation container
   useEffect(() => {
-    if (isDockOpen && typeof messagesEndRef.current?.scrollIntoView === 'function') {
-      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    if (isDockOpen && containerRef.current) {
+      try {
+        if (typeof containerRef.current.scrollTo === 'function') {
+          containerRef.current.scrollTo({
+            top: containerRef.current.scrollHeight,
+            behavior: 'smooth'
+          });
+        } else {
+          containerRef.current.scrollTop = containerRef.current.scrollHeight;
+        }
+      } catch {
+        containerRef.current.scrollTop = containerRef.current.scrollHeight;
+      }
     }
   }, [messages, isStreaming, isDockOpen]);
 
@@ -161,7 +172,7 @@ const FloatingDock = () => {
               )}
 
               {/* Scrollable Conversation Stream */}
-              <div className="p-4 space-y-3 flex-1 overflow-y-auto max-h-[50vh] custom-scrollbar text-xs">
+              <div ref={containerRef} className="p-4 space-y-3 flex-1 overflow-y-auto max-h-[50vh] custom-scrollbar text-xs">
                 {messages.map((msg) => (
                   <div key={msg.id} className="space-y-1">
                     {msg.role === 'user' ? (
@@ -242,7 +253,6 @@ const FloatingDock = () => {
                     )}
                   </div>
                 ))}
-                <div ref={messagesEndRef} />
               </div>
 
               {/* Quick Suggested Prompts */}

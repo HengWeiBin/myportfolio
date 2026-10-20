@@ -319,6 +319,101 @@ describe('HeroTerminal Component', () => {
 
     mockFetch.mockRestore();
   });
+
+  it('scrolls terminal into view with block nearest on handleSubmit and handlePromptClick', () => {
+    const mockScrollIntoView = vi.fn();
+    const mockSendMessage = vi.fn();
+
+    render(
+      <AgentContext.Provider value={{
+        messages: [],
+        isStreaming: false,
+        sendMessage: mockSendMessage,
+        suggestedPrompts: [{ label: 'Test Prompt', query: 'Test Query' }],
+        rateLimitReached: false,
+        fallbackReason: null,
+        resetChat: vi.fn(),
+      }}>
+        <HeroTerminal />
+      </AgentContext.Provider>
+    );
+
+    const terminalElem = screen.getByTestId('hero-terminal');
+    terminalElem.scrollIntoView = mockScrollIntoView;
+
+    // Test handleSubmit
+    const input = screen.getByTestId('hero-terminal-input');
+    fireEvent.change(input, { target: { value: 'User question' } });
+    fireEvent.click(screen.getByTestId('hero-terminal-submit'));
+
+    expect(mockSendMessage).toHaveBeenCalledWith('User question');
+    expect(mockScrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'nearest' });
+
+    mockScrollIntoView.mockClear();
+
+    // Test handlePromptClick
+    const promptBtn = screen.getByTestId('suggested-prompt-0');
+    fireEvent.click(promptBtn);
+
+    expect(mockSendMessage).toHaveBeenCalledWith('Test Query');
+    expect(mockScrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'nearest' });
+  });
+
+  it('auto-scrolls internal container on message update or streaming without calling scrollIntoView', () => {
+    const mockScrollIntoView = vi.fn();
+    const originalScrollIntoView = window.HTMLElement.prototype.scrollIntoView;
+    window.HTMLElement.prototype.scrollIntoView = mockScrollIntoView;
+
+    const mockScrollTo = vi.fn();
+    const originalScrollTo = window.HTMLElement.prototype.scrollTo;
+    window.HTMLElement.prototype.scrollTo = mockScrollTo;
+
+    const { rerender } = render(
+      <AgentContext.Provider value={{
+        messages: [{ id: '1', role: 'user', content: 'Hi' }],
+        isStreaming: false,
+        sendMessage: vi.fn(),
+        suggestedPrompts: [],
+        rateLimitReached: false,
+        fallbackReason: null,
+        resetChat: vi.fn(),
+      }}>
+        <HeroTerminal />
+      </AgentContext.Provider>
+    );
+
+    expect(mockScrollTo).toHaveBeenCalledWith(
+      expect.objectContaining({ behavior: 'smooth' })
+    );
+
+    mockScrollIntoView.mockClear();
+    mockScrollTo.mockClear();
+
+    rerender(
+      <AgentContext.Provider value={{
+        messages: [
+          { id: '1', role: 'user', content: 'Hi' },
+          { id: '2', role: 'assistant', content: 'Hello there', isStreaming: true }
+        ],
+        isStreaming: true,
+        sendMessage: vi.fn(),
+        suggestedPrompts: [],
+        rateLimitReached: false,
+        fallbackReason: null,
+        resetChat: vi.fn(),
+      }}>
+        <HeroTerminal />
+      </AgentContext.Provider>
+    );
+
+    expect(mockScrollTo).toHaveBeenCalledWith(
+      expect.objectContaining({ behavior: 'smooth' })
+    );
+    expect(mockScrollIntoView).not.toHaveBeenCalled();
+
+    window.HTMLElement.prototype.scrollIntoView = originalScrollIntoView;
+    window.HTMLElement.prototype.scrollTo = originalScrollTo;
+  });
 });
 
 describe('FloatingDock Component & Cmd+K Shortcut', () => {
@@ -373,6 +468,73 @@ describe('FloatingDock Component & Cmd+K Shortcut', () => {
     // Press Escape
     fireEvent.keyDown(window, { key: 'Escape' });
     expect(screen.queryByTestId('floating-dock-drawer')).not.toBeInTheDocument();
+  });
+
+  it('auto-scrolls internal container when open without calling scrollIntoView', () => {
+    const mockScrollIntoView = vi.fn();
+    const originalScrollIntoView = window.HTMLElement.prototype.scrollIntoView;
+    window.HTMLElement.prototype.scrollIntoView = mockScrollIntoView;
+
+    const mockScrollTo = vi.fn();
+    const originalScrollTo = window.HTMLElement.prototype.scrollTo;
+    window.HTMLElement.prototype.scrollTo = mockScrollTo;
+
+    const { rerender } = render(
+      <AgentContext.Provider value={{
+        messages: [{ id: '1', role: 'user', content: 'Hi' }],
+        isStreaming: false,
+        sendMessage: vi.fn(),
+        isHeroVisible: false,
+        isDockOpen: true,
+        openDock: vi.fn(),
+        closeDock: vi.fn(),
+        toggleDock: vi.fn(),
+        suggestedPrompts: [],
+        rateLimitReached: false,
+        rateLimitNotice: null,
+        resetChat: vi.fn(),
+      }}>
+        <FloatingDock />
+      </AgentContext.Provider>
+    );
+
+    expect(mockScrollTo).toHaveBeenCalledWith(
+      expect.objectContaining({ behavior: 'smooth' })
+    );
+    expect(mockScrollIntoView).not.toHaveBeenCalled();
+
+    mockScrollTo.mockClear();
+    mockScrollIntoView.mockClear();
+
+    rerender(
+      <AgentContext.Provider value={{
+        messages: [
+          { id: '1', role: 'user', content: 'Hi' },
+          { id: '2', role: 'assistant', content: 'Streaming reply...', isStreaming: true }
+        ],
+        isStreaming: true,
+        sendMessage: vi.fn(),
+        isHeroVisible: false,
+        isDockOpen: true,
+        openDock: vi.fn(),
+        closeDock: vi.fn(),
+        toggleDock: vi.fn(),
+        suggestedPrompts: [],
+        rateLimitReached: false,
+        rateLimitNotice: null,
+        resetChat: vi.fn(),
+      }}>
+        <FloatingDock />
+      </AgentContext.Provider>
+    );
+
+    expect(mockScrollTo).toHaveBeenCalledWith(
+      expect.objectContaining({ behavior: 'smooth' })
+    );
+    expect(mockScrollIntoView).not.toHaveBeenCalled();
+
+    window.HTMLElement.prototype.scrollIntoView = originalScrollIntoView;
+    window.HTMLElement.prototype.scrollTo = originalScrollTo;
   });
 });
 
