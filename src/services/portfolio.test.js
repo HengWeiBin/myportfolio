@@ -58,7 +58,7 @@ const mockProjects = [
     tags: ['PyTorch', 'ROS2'],
     tier: 'featured',
     sort_order: 1,
-    visual_type: 'ResultViz',
+    visual_type: 'image',
     is_confidential: false,
     repo_visibility: 'public',
     metrics: { accuracy: '98.2%' }
@@ -396,7 +396,7 @@ describe('Netlify Function: POST /api/admin/crud', () => {
       link: 'https://example.com/slam',
       tier: 'featured',
       sort_order: 1,
-      visual_type: 'ResultViz',
+      visual_type: 'image',
       is_confidential: true,
       repo_visibility: 'private',
       metrics: { latency: '15ms', accuracy: '99%' }

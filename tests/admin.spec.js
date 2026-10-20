@@ -405,7 +405,7 @@ test.describe('Admin Panel', () => {
         link: 'https://internal.corp/nda',
         tier: 'featured',
         sort_order: 1,
-        visual_type: 'ResultViz',
+        visual_type: 'image',
         is_confidential: true,
         repo_visibility: 'private',
         metrics: { speedup: '4.2x', latency: '12ms' }

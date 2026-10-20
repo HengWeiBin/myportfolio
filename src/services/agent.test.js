@@ -133,7 +133,7 @@ describe('Read-Only Tools & Safe Redaction', () => {
         tags: ['PyTorch', 'ROS2', 'CUDA'],
         tier: 'featured',
         sort_order: 1,
-        visual_type: 'ResultViz',
+        visual_type: 'image',
         is_confidential: false,
         repo_visibility: 'public',
         metrics: { mAP: '89.4%', latency_ms: 18 }
@@ -149,7 +149,7 @@ describe('Read-Only Tools & Safe Redaction', () => {
         tags: ['Graph Neural Networks', 'Kafka'],
         tier: 'featured',
         sort_order: 2,
-        visual_type: 'NeuralArch',
+        visual_type: 'image',
         is_confidential: true,
         repo_visibility: 'private',
         metrics: { prevented_fraud_loss: '$45,000,000', client_name: 'Confidential Bank' }
@@ -456,7 +456,7 @@ describe('Netlify Function: POST /api/agent/chat SSE Streaming', () => {
         tags: ['PyTorch'],
         tier: 'featured',
         sort_order: 1,
-        visual_type: 'ResultViz',
+        visual_type: 'image',
         is_confidential: false,
         repo_visibility: 'public',
         metrics: { accuracy: '98%' }
@@ -542,7 +542,7 @@ describe('Netlify Function: POST /api/agent/chat SSE Streaming', () => {
           tags: ['PyTorch'],
           tier: 'featured',
           sort_order: 1,
-          visual_type: 'ResultViz',
+          visual_type: 'image',
           is_confidential: false,
           repo_visibility: 'public',
           metrics: { accuracy: '98%' }

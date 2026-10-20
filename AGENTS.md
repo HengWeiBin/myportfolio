@@ -89,8 +89,7 @@ npx playwright show-report
 │   │   ├── Common/                   # Reusable components (Loading.js)
 │   │   ├── Hero/                     # Hero section components (TrainingLog.js)
 │   │   ├── Layout/                   # Layout wrappers (TerminalLayout.js)
-│   │   ├── Sections/                 # Page sections (Hero, Skills, Projects, etc.)
-│   │   └── Visualizations/           # NeuralArch, CodeBlock, ResultViz
+│   │   └── Sections/                 # Page sections (Hero, Skills, Projects, etc.)
 │   ├── context/
 │   │   └── ProfileContext.js         # Profile state management
 │   ├── pages/
