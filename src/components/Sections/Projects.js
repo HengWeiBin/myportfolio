@@ -3,16 +3,7 @@ import ReactMarkdown from 'react-markdown';
 import { Link } from 'react-router-dom';
 import { usePortfolio } from '../../context/ProfileContext';
 import { useAgent } from '../Agent/AgentContext';
-import NeuralArch from '../Visualizations/NeuralArch';
-import CodeBlock from '../Visualizations/CodeBlock';
-import ResultViz from '../Visualizations/ResultViz';
 import { Skeleton } from '../Common/Loading';
-
-const PROJECT_VISUALS = {
-  'CenterFusionDetect3D': 'ResultViz',
-  'StudentsRegistrationSystem': 'CodeBlock',
-  'RadarCameraFusion': 'NeuralArch',
-};
 
 const Projects = () => {
   const { projects = [], loading } = usePortfolio();
@@ -33,23 +24,6 @@ const Projects = () => {
   }, [projects]);
 
   const renderVisual = (project) => {
-    const visualType = project.visual_type && project.visual_type !== 'image'
-      ? project.visual_type
-      : (PROJECT_VISUALS[project.title] || Object.keys(PROJECT_VISUALS).find(k => project.title?.includes(k)) ? PROJECT_VISUALS[Object.keys(PROJECT_VISUALS).find(k => project.title?.includes(k))] : null);
-
-    if (visualType === 'NeuralArch') return <NeuralArch />;
-    if (visualType === 'CodeBlock') {
-      return (
-        <CodeBlock
-          code={`# Core Algorithm: Sensor Fusion\ndef fuse_sensors(radar, camera):\n    """\n    Fuse radar point clouds with\n    camera image features.\n    """\n    return kalman_filter(radar, camera)`}
-          language="python"
-        />
-      );
-    }
-    if (visualType === 'ResultViz') {
-      return <ResultViz label="Pedestrian" confidence="0.92" image={project.image_url} />;
-    }
-
     if (project.image_url) {
       return (
         <img
@@ -62,11 +36,12 @@ const Projects = () => {
     }
 
     return (
-      <div className="w-full h-full flex items-center justify-center bg-[#0d1117] p-2">
-        <CodeBlock
-          language="bash"
-          code={`> locating_assets...\n> status: ok\n> architecture: multi-head attention`}
-        />
+      <div className="w-full h-full flex flex-col items-center justify-center bg-cyber-card/40 p-6 text-center font-mono">
+        <div className="w-12 h-12 rounded-full border border-cyan-electric/30 bg-cyan-electric/10 flex items-center justify-center mb-3 text-cyan-electric">
+          <span className="text-lg font-bold">&gt;_</span>
+        </div>
+        <p className="text-xs text-slate-400 uppercase tracking-widest mb-1">[NO_VISUAL_FEED]</p>
+        <p className="text-[11px] text-slate-500 font-mono">Telemetry stream nominal</p>
       </div>
     );
   };
