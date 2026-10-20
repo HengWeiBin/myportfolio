@@ -130,8 +130,12 @@ const Dashboard = ({ refreshPortfolio: propRefreshPortfolio }) => {
       };
       const apiSet = mutations[activeTab];
       if (apiSet) {
-        if (isEdit) await apiSet.update(dataToSave.id, dataToSave);
-        else await apiSet.add(dataToSave);
+        if (isEdit) {
+          const targetId = dataToSave.id || modalData?.id;
+          await apiSet.update(targetId, dataToSave);
+        } else {
+          await apiSet.add(dataToSave);
+        }
       }
       setShowModal(false);
       toast.success(`${isEdit ? 'Updated' : 'Added'} successfully`);

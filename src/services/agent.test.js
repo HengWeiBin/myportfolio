@@ -1009,6 +1009,7 @@ describe('SSE done event source and degradation telemetry', () => {
   beforeEach(() => {
     _resetMemoryMap();
     _setCustomFetch(null);
+    _setCustomSql(vi.fn(async () => []));
   });
 
   afterEach(() => {

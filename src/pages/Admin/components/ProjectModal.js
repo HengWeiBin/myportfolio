@@ -27,13 +27,11 @@ const ProjectModal = ({ isOpen, isEdit, initialData = {}, onClose, onSave, uploa
   const [imagePreview, setImagePreview] = useState(initialData.image_url || null);
 
   useEffect(() => {
-    let metricsStr = '{}';
-    if (typeof initialData.metrics === 'object' && initialData.metrics !== null) {
-      metricsStr = JSON.stringify(initialData.metrics, null, 2);
-    } else if (typeof initialData.metrics === 'string') {
-      metricsStr = initialData.metrics;
-    }
+    const metricsStr = typeof initialData.metrics === 'object' && initialData.metrics !== null
+      ? JSON.stringify(initialData.metrics, null, 2)
+      : (typeof initialData.metrics === 'string' ? initialData.metrics : '{}');
     setFormData({
+      id: initialData.id,
       title: initialData.title || '',
       description: initialData.description || '',
       link: initialData.link || '',
@@ -74,6 +72,7 @@ const ProjectModal = ({ isOpen, isEdit, initialData = {}, onClose, onSave, uploa
 
     onSave({
       ...formData,
+      ...(initialData.id ? { id: initialData.id } : {}),
       sort_order: Number(formData.sort_order) || 0,
       is_confidential: Boolean(formData.is_confidential),
       metrics: parsedMetrics,
@@ -153,6 +152,7 @@ const ProjectModal = ({ isOpen, isEdit, initialData = {}, onClose, onSave, uploa
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <FormSelect
+              id="visual_type"
               label="Visual Type"
               value={formData.visual_type}
               onChange={(e) => setFormData({ ...formData, visual_type: e.target.value })}
@@ -233,12 +233,8 @@ const ProjectModal = ({ isOpen, isEdit, initialData = {}, onClose, onSave, uploa
 
           {/* Action Buttons */}
           <div className="flex justify-end gap-3 pt-3 border-t border-cyber-border">
-            <AdminButton variant="secondary" onClick={onClose}>
-              Cancel
-            </AdminButton>
-            <AdminButton type="submit" loading={uploading}>
-              Save Changes
-            </AdminButton>
+            <AdminButton variant="secondary" onClick={onClose}>Cancel</AdminButton>
+            <AdminButton type="submit" loading={uploading}>Save Changes</AdminButton>
           </div>
         </form>
       </div>

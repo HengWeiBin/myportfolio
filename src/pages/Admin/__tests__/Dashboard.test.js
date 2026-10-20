@@ -14,8 +14,16 @@ vi.mock('../../../services/api', () => ({
   updateProject: vi.fn(),
   updateCertificate: vi.fn(),
   updateExperience: vi.fn(),
+  updateSkill: vi.fn(),
+  updateProfile: vi.fn(),
   addProject: vi.fn(),
+  addCertificate: vi.fn(),
+  addExperience: vi.fn(),
+  addSkill: vi.fn(),
   deleteProject: vi.fn(),
+  deleteCertificate: vi.fn(),
+  deleteExperience: vi.fn(),
+  deleteSkill: vi.fn(),
 }));
 
 vi.mock('../../../services/upload', () => ({
@@ -452,6 +460,49 @@ describe('Dashboard Batch Save & Staging Integration', () => {
       await waitFor(() => {
         expect(refreshPortfolio).toHaveBeenCalledTimes(1);
       });
+    });
+  });
+
+  describe('Modal Editing & ID Preservation', () => {
+    it('opens project edit modal, updates visual_type, preserves id and calls api.updateProject', async () => {
+      render(<Dashboard />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Radar Fusion')).toBeInTheDocument();
+      });
+
+      // Click Edit for the first project
+      const editButtons = screen.getAllByRole('button', { name: /^edit$/i });
+      fireEvent.click(editButtons[0]);
+
+      // Wait for modal to open
+      await waitFor(() => {
+        expect(screen.getByText(/edit projects/i)).toBeInTheDocument();
+      });
+
+      const modal = screen.getByText(/edit projects/i).closest('.fixed');
+      expect(modal).toBeInTheDocument();
+
+      // Change Visual Type to NeuralArch
+      const visualTypeSelect = screen.getByLabelText(/visual type/i);
+      fireEvent.change(visualTypeSelect, { target: { value: 'NeuralArch' } });
+
+      // Submit form in modal
+      const form = modal.querySelector('form');
+      fireEvent.submit(form);
+
+      await waitFor(() => {
+        expect(api.updateProject).toHaveBeenCalledTimes(1);
+      });
+
+      expect(api.updateProject).toHaveBeenCalledWith(
+        '1',
+        expect.objectContaining({
+          id: '1',
+          visual_type: 'NeuralArch',
+        })
+      );
+      expect(toast.success).toHaveBeenCalledWith('Updated successfully');
     });
   });
 });

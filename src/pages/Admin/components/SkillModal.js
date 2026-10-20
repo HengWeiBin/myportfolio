@@ -21,6 +21,7 @@ const SkillModal = ({
 
   useEffect(() => {
     setFormData({
+      id: initialData.id,
       name: initialData.name || '',
       category: initialData.category || '',
     });
@@ -30,7 +31,10 @@ const SkillModal = ({
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSave(formData);
+    onSave({
+      ...formData,
+      ...(initialData.id ? { id: initialData.id } : {}),
+    });
   };
 
   return (

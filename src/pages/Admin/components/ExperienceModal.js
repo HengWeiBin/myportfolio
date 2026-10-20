@@ -25,6 +25,7 @@ const ExperienceModal = ({
 
   useEffect(() => {
     setFormData({
+      id: initialData.id,
       role: initialData.role || '',
       company: initialData.company || '',
       date_range: initialData.date_range || '',
@@ -39,6 +40,7 @@ const ExperienceModal = ({
     e.preventDefault();
     onSave({
       ...formData,
+      ...(initialData.id ? { id: initialData.id } : {}),
       sort_order: Number(formData.sort_order) || 0,
     });
   };
