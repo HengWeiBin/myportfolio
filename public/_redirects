@@ -1,1 +1,12 @@
-/*    /index.html   200
+/api/auth/login          /.netlify/functions/auth-login          200
+/api/auth/logout         /.netlify/functions/auth-logout         200
+/api/auth/session        /.netlify/functions/auth-session        200
+/api/portfolio           /.netlify/functions/portfolio           200
+/api/admin/crud          /.netlify/functions/admin-crud          200
+/api/agent/chat          /.netlify/functions/agent-chat          200
+/api/admin/llm/config    /.netlify/functions/admin-agent?action=config  200
+/api/admin/llm/test      /.netlify/functions/admin-agent?action=test    200
+/api/admin/conversations /.netlify/functions/admin-agent?action=conversations 200
+/api/admin/llm/*         /.netlify/functions/admin-agent         200
+/api/*                   /.netlify/functions/:splat              200
+/*                       /index.html                             200
