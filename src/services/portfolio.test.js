@@ -263,6 +263,35 @@ describe('Netlify Function: GET /api/portfolio', () => {
     expect(responseText).not.toContain('password');
   });
 
+  it('includes Vary header and sets Cache-Control appropriately for public vs admin vs fresh requests', async () => {
+    // 1. Public request
+    const pubRes = await portfolioHandler.handler({ httpMethod: 'GET' });
+    expect(pubRes.headers['Vary']).toBe('Cookie, Authorization, x-admin-key');
+    expect(pubRes.headers['Cache-Control']).toBe('public, max-age=60, s-maxage=300');
+
+    // 2. Admin request via x-admin-key
+    const adminRes = await portfolioHandler.handler({
+      httpMethod: 'GET',
+      headers: { 'x-admin-key': 'test-admin-secret-key' }
+    });
+    expect(adminRes.headers['Vary']).toBe('Cookie, Authorization, x-admin-key');
+    expect(adminRes.headers['Cache-Control']).toBe('no-cache, no-store, must-revalidate');
+
+    // 3. Fresh request via query string ?fresh=true
+    const freshRes = await portfolioHandler.handler({
+      httpMethod: 'GET',
+      queryStringParameters: { fresh: 'true' }
+    });
+    expect(freshRes.headers['Cache-Control']).toBe('no-cache, no-store, must-revalidate');
+
+    // 4. Fresh request via query string ?_t=12345
+    const tRes = await portfolioHandler.handler({
+      httpMethod: 'GET',
+      queryStringParameters: { _t: '1729000000' }
+    });
+    expect(tRes.headers['Cache-Control']).toBe('no-cache, no-store, must-revalidate');
+  });
+
   it('handles database errors gracefully without leaking raw database stack or credentials', async () => {
     portfolioHandler.__setSql(vi.fn().mockRejectedValue(new Error('connection to server at "ep-test-123.neon.tech", port 5432 failed')));
 
@@ -464,6 +493,50 @@ describe('Netlify Function: POST /api/admin/crud', () => {
     const body = JSON.parse(res.body);
     expect(body.success).toBe(true);
   });
+
+  it('updateProject preserves image_url when undefined, but updates when explicitly null or string', async () => {
+    // 1. undefined image_url
+    await adminCrudHandler.handler({
+      httpMethod: 'POST',
+      headers: { 'x-admin-key': 'test-admin-secret-key' },
+      body: JSON.stringify({
+        action: 'updateProject',
+        id: 1,
+        data: { title: 'Updated Title' }
+      })
+    });
+    expect(mockSqlFn).toHaveBeenCalled();
+    const lastCallStrings = mockSqlFn.mock.calls[0][0].join(' ');
+    expect(lastCallStrings).toContain('image_url = CASE WHEN');
+
+    // 2. explicit null image_url
+    mockSqlFn.mockClear();
+    await adminCrudHandler.handler({
+      httpMethod: 'POST',
+      headers: { 'x-admin-key': 'test-admin-secret-key' },
+      body: JSON.stringify({
+        action: 'updateProject',
+        id: 1,
+        data: { title: 'Cleared Image Title', image_url: null }
+      })
+    });
+    expect(mockSqlFn).toHaveBeenCalled();
+  });
+
+  it('updateCertificate preserves image_url when undefined, but updates when explicitly provided', async () => {
+    await adminCrudHandler.handler({
+      httpMethod: 'POST',
+      headers: { 'x-admin-key': 'test-admin-secret-key' },
+      body: JSON.stringify({
+        action: 'updateCertificate',
+        id: 2,
+        data: { title: 'AWS Cert Update' }
+      })
+    });
+    expect(mockSqlFn).toHaveBeenCalled();
+    const lastCallStrings = mockSqlFn.mock.calls[0][0].join(' ');
+    expect(lastCallStrings).toContain('image_url = CASE WHEN');
+  });
 });
 
 describe('Frontend API Service: /api/portfolio consumption & CRUD', () => {
@@ -547,6 +620,76 @@ describe('Frontend API Service: /api/portfolio consumption & CRUD', () => {
     expect(experience).toEqual(mockExperience);
     expect(certs).toEqual(mockCertificates);
     expect(profile).toEqual(mockProfile);
+  });
+
+  it('fetchPortfolioData with fresh: true attaches _t, credentials, and x-admin-key header', async () => {
+    global.fetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({ profile: mockProfile })
+    });
+
+    localStorage.setItem('admin_api_key', 'local-admin-key');
+
+    await fetchPortfolioData({ fresh: true });
+
+    expect(global.fetch).toHaveBeenCalledWith(
+      expect.stringMatching(/\/api\/portfolio\?_t=\d+/),
+      expect.objectContaining({
+        credentials: 'include',
+        headers: { 'x-admin-key': 'local-admin-key' }
+      })
+    );
+
+    localStorage.removeItem('admin_api_key');
+  });
+
+  it('getProjects, getCertificates, getSkills, getExperience, getProfile forward options to fetchPortfolioData', async () => {
+    global.fetch.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        projects: mockProjects,
+        certificates: mockCertificates,
+        skills: mockSkills,
+        experience: mockExperience,
+        profile: mockProfile
+      })
+    });
+
+    await getProjects({ fresh: true });
+    expect(global.fetch).toHaveBeenCalledWith(
+      expect.stringMatching(/\/api\/portfolio\?_t=\d+/),
+      expect.objectContaining({ credentials: 'include' })
+    );
+
+    global.fetch.mockClear();
+    await getCertificates({ fresh: true });
+    expect(global.fetch).toHaveBeenCalledWith(
+      expect.stringMatching(/\/api\/portfolio\?_t=\d+/),
+      expect.objectContaining({ credentials: 'include' })
+    );
+
+    global.fetch.mockClear();
+    await getSkills({ fresh: true });
+    expect(global.fetch).toHaveBeenCalledWith(
+      expect.stringMatching(/\/api\/portfolio\?_t=\d+/),
+      expect.objectContaining({ credentials: 'include' })
+    );
+
+    global.fetch.mockClear();
+    await getExperience({ fresh: true });
+    expect(global.fetch).toHaveBeenCalledWith(
+      expect.stringMatching(/\/api\/portfolio\?_t=\d+/),
+      expect.objectContaining({ credentials: 'include' })
+    );
+
+    global.fetch.mockClear();
+    await getProfile({ fresh: true });
+    expect(global.fetch).toHaveBeenCalledWith(
+      expect.stringMatching(/\/api\/portfolio\?_t=\d+/),
+      expect.objectContaining({ credentials: 'include' })
+    );
   });
 
   it('admin CRUD methods (addProject, updateProject, deleteProject, etc.) route to /api/admin/crud', async () => {

@@ -4,8 +4,33 @@ export const fetchPortfolioData = async (options = {}) => {
   const baseUrl = typeof window !== 'undefined' && window.location?.origin
     ? window.location.origin
     : '';
-  const query = options?.tier ? `?tier=${encodeURIComponent(options.tier)}` : '';
-  const response = await fetch(`${baseUrl}/api/portfolio${query}`);
+
+  const params = new URLSearchParams();
+  if (options?.tier) {
+    params.set('tier', options.tier);
+  }
+  if (options?.fresh) {
+    params.set('_t', Date.now().toString());
+  }
+  const queryString = params.toString();
+  const query = queryString ? `?${queryString}` : '';
+
+  const fetchOptions = {};
+  if (options?.fresh) {
+    fetchOptions.credentials = 'include';
+    const adminKey = (typeof process !== 'undefined' && process.env?.REACT_APP_ADMIN_API_KEY)
+      || (typeof window !== 'undefined' && window.localStorage ? window.localStorage.getItem('admin_api_key') : null);
+    if (adminKey) {
+      fetchOptions.headers = {
+        'x-admin-key': adminKey,
+      };
+    }
+  }
+
+  const response = Object.keys(fetchOptions).length > 0
+    ? await fetch(`${baseUrl}/api/portfolio${query}`, fetchOptions)
+    : await fetch(`${baseUrl}/api/portfolio${query}`);
+
   if (!response.ok) {
     throw new Error(`Failed to fetch portfolio data: ${response.status} ${response.statusText}`);
   }
@@ -17,8 +42,8 @@ export const getProjects = async (options = {}) => {
   return data.projects || [];
 };
 
-export const getTieredProjects = async () => {
-  const data = await fetchPortfolioData();
+export const getTieredProjects = async (options = {}) => {
+  const data = await fetchPortfolioData(options);
   return data.tiered_projects || data.tiered?.projects || {};
 };
 
@@ -27,18 +52,18 @@ export const getCertificates = async (options = {}) => {
   return data.certificates || [];
 };
 
-export const getSkills = async () => {
-  const data = await fetchPortfolioData();
+export const getSkills = async (options = {}) => {
+  const data = await fetchPortfolioData(options);
   return data.skills || [];
 };
 
-export const getExperience = async () => {
-  const data = await fetchPortfolioData();
+export const getExperience = async (options = {}) => {
+  const data = await fetchPortfolioData(options);
   return data.experience || [];
 };
 
-export const getProfile = async () => {
-  const data = await fetchPortfolioData();
+export const getProfile = async (options = {}) => {
+  const data = await fetchPortfolioData(options);
   return data.profile || {};
 };
 
