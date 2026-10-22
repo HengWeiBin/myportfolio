@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS projects (
 | `date_start` | `TEXT` | Yes | `''` | Project start date formatted as `YYYY-MM` (e.g., `'2023-07'`). |
 | `date_end` | `TEXT` | Yes | `''` | Project end date formatted as `YYYY-MM` (e.g., `'2024-10'`) or `'PRESENT'` for ongoing work. |
 | `tags` | `TEXT[]` | Yes | `'{}'::text[]` | Array of domain tags, frameworks, or competencies (e.g., `ARRAY['PyTorch', 'Computer Vision', 'CUDA', 'TensorRT']`). |
-| `image_url` | `TEXT` | Yes | `NULL` | Public Cloudflare R2 CDN URL (e.g., `https://pub-<id>.r2.dev/projects/...`). **Never use raw.githubusercontent.com** due to CORS and browser anti-hotlinking referrer headers. |
+| `image_url` | `TEXT` | Yes | `NULL` | Public Cloudflare R2 CDN URL (e.g., `https://pub-<id>.r2.dev/projects/...`). Optimal aspect ratio is **5:4 / 4:3** (~1.25 : 1, e.g., `800x640` or `1000x800`) to ensure optimal rendering under the card's `md:w-5/12 min-h-[380px]` `object-cover` layout without distortion or cropping. **Never use raw.githubusercontent.com** due to CORS and browser anti-hotlinking referrer headers. |
 | `tier` | `TEXT` | No | `'standard'` | Card tier classification: `'featured'` (highlighted flagship projects showcased on top) or `'standard'` (general portfolio grid). |
 | `sort_order` | `INTEGER` | No | `0` | Ascending sort weight (0 is top rank / flagship). When inserting with `sort_order: 0`, existing projects with `sort_order >= 0` should be incremented. |
 | `visual_type` | `TEXT` | No | `'image'` | Frontend visualization renderer component: `'image'`, `'ResultViz'`, `'NeuralArch'`, or `'CodeBlock'`. |
@@ -70,6 +70,13 @@ The UI maps `visual_type` to specialized visualization components:
 - `'ResultViz'`: Interactive charts or evaluation visualizer (e.g., precision-recall curves, loss curves).
 - `'NeuralArch'`: Neural network topology or pipeline workflow diagram.
 - `'CodeBlock'`: Terminal code snippet or model inference signature preview.
+
+### `image_url`
+- **Optimal Aspect Ratio**: **5:4** or **4:3** (~1.25 : 1), such as `800x640` or `1000x800`.
+- **Card Display Layout**: In `src/components/Sections/Projects.js`, the project card visual container is styled with `md:w-5/12 min-h-[380px]` and uses CSS `object-cover`.
+- **Cropping & Distortion Avoidance**: Do NOT use ultra-wide banner images (e.g., 16:9 or 3:1 banners like `1200x360`). Under `object-cover`, ultra-wide graphics will have over 60% of their horizontal area cropped out.
+- **Safe Margin Mandate**: Keep key typography, architecture diagrams, and logos padded with at least 45px margin from all image borders to prevent clipping.
+- **CDN Hosting Requirement**: Assets must be hosted on Cloudflare R2 and served via the R2 public CDN base URL (`REACT_APP_R2_PUBLIC_BASE_URL`). Never use raw GitHub links in the database.
 
 ### `metrics` (JSONB)
 Stores quantifiable machine learning benchmarks and performance metrics. Format as key-value pairs where values include units:

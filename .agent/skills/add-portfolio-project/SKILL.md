@@ -18,10 +18,14 @@ This skill provides an automated, non-invasive workflow for adding and updating 
 2. **Strict R2 CDN Policy (NO Raw GitHub URLs)**:
    - **CRITICAL**: Never save `raw.githubusercontent.com` or `github.com/.../raw/...` URLs directly to the database. These URLs fail in web browsers due to CORS headers, anti-hotlinking referrer policies, and token expirations.
    - All external images must be fetched and uploaded to Cloudflare R2 via the bundled script `scripts/add_project.mjs`.
-3. **Clean Git Tree Mandate**:
+3. **Image Aspect Ratio & Card Display Directives**:
+   - The frontend project card (`src/components/Sections/Projects.js`) renders images in an `md:w-5/12 min-h-[380px]` container with CSS `object-cover`.
+   - **Recommended Aspect Ratio**: **5:4** or **4:3** (e.g., `800x640` or `1000x800`).
+   - **CRITICAL WARNING**: Do NOT use ultra-wide banners (e.g., 16:9 or 3:1 banners like 1200x360), as `object-cover` will severely crop off >60% of the graphic horizontally. Always ensure key typography, architecture diagrams, and logos have at least 45px padding/safe margin from borders.
+4. **Clean Git Tree Mandate**:
    - Do NOT edit `.js`, `.json`, or component files to register new projects.
    - Verify `git status` remains clean after project creation.
-4. **Two-Phase Execution & Mandatory Human Confirmation Gate (Strict Auto-Continue Exception)**:
+5. **Two-Phase Execution & Mandatory Human Confirmation Gate (Strict Auto-Continue Exception)**:
    - Modifying remote database records and uploading CDN assets are mutating operations.
    - Agents executing this skill MUST operate under a strict two-phase protocol:
      - **Phase 1: Exploration, Extraction, Schema Formatting & Dry-Run Validation**.
@@ -88,7 +92,7 @@ Structure the extracted information according to the schema specifications (see 
 | `is_confidential` | `false` | Set `true` if enterprise NDA / proprietary |
 | `repo_visibility` | `"public"` or `"private"` | Code availability |
 | `metrics` | `{"FPS": "120", "mAP50": "84.2%", "Latency": "8.3ms"}` | JSONB key-value benchmarks |
-| `image_url` | `"https://raw.githubusercontent.com/.../demo.png"` | Source image to be imported |
+| `image_url` | `"https://raw.githubusercontent.com/.../demo.png"` | Source image to be imported (optimal **5:4** or **4:3** ratio, e.g., 800x640; avoid 16:9/3:1 banners) |
 
 Perform optional dry-run parameter validation using `scripts/add_project.mjs --dry-run` or inspecting the payload without uploading.
 
@@ -110,7 +114,7 @@ Perform optional dry-run parameter validation using `scripts/add_project.mjs --d
    | **排序權重 (Sort Order)** | `0` (置頂旗艦) 或 `1`, `2`... | 排序權重 (設為 0 會自動後移其他專案) |
    | **前端視覺元件 (Visual Type)** | `NeuralArch` / `ResultViz` / `image` / `CodeBlock` | 卡片視覺化渲染組件 |
    | **基準指標 (Metrics)** | `{"指標1": "數值", ...}` | 量化評測指標 (JSONB) |
-   | **影像來源 (Image URL)** | `https://...` | 來源圖片 (待於 Phase 2 上傳至 R2 CDN) |
+   | **影像來源 (Image URL)** | `https://...` | 來源圖片 (建議比例 **5:4** 或 **4:3**，避免超寬橫幅；待於 Phase 2 上傳至 R2 CDN) |
    | **起訖日期 (Date Range)** | `YYYY-MM ~ PRESENT` | 專案開發期間 |
    | **開源狀態 / 機密** | `public` / `false` | 權限設定 |
 
@@ -127,6 +131,10 @@ Perform optional dry-run parameter validation using `scripts/add_project.mjs --d
 
 #### Step 3: Image Hosting via Cloudflare R2
 The bundled script automatically downloads the source image and uploads it to Cloudflare R2:
+- **Aspect Ratio & Safe Margin Verification**:
+  - The frontend project card (`src/components/Sections/Projects.js`) renders images in an `md:w-5/12 min-h-[380px]` container with CSS `object-cover`.
+  - Recommended aspect ratio is **5:4** or **4:3** (e.g., `800x640` or `1000x800`).
+  - **CRITICAL WARNING**: Do NOT use ultra-wide banners (e.g. 16:9 or 3:1 banners like 1200x360), as `object-cover` will severely crop off >60% of the graphic horizontally. Always ensure key typography and logos have at least 45px padding/safe margin from borders.
 - Generates key: `projects/{filename}_{timestamp}.{ext}`
 - Content-Type is inferred automatically (`image/png`, `image/jpeg`, `image/webp`, etc.)
 - Uploads directly to `R2_BUCKET_NAME` using S3 API credentials.
