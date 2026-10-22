@@ -22,6 +22,7 @@ const CertificateModal = ({
     category: 'Certificate',
     tier: 'standard',
     sort_order: 0,
+    image_url: initialData.image_url !== undefined ? initialData.image_url : null,
     ...initialData,
   });
 
@@ -38,6 +39,7 @@ const CertificateModal = ({
       category: initialData.category || 'Certificate',
       tier: (initialData.tier === 'foundation' || initialData.tier === 'archived') ? 'archive' : (initialData.tier || 'standard'),
       sort_order: initialData.sort_order ?? 0,
+      image_url: initialData.image_url !== undefined ? initialData.image_url : null,
     });
     setImagePreview(initialData.image_url || null);
     setSelectedFile(null);
@@ -59,6 +61,7 @@ const CertificateModal = ({
       ...(initialData.id ? { id: initialData.id } : {}),
       sort_order: Number(formData.sort_order) || 0,
       file: selectedFile,
+      image_url: formData.image_url !== undefined ? formData.image_url : (initialData.image_url !== undefined ? initialData.image_url : null),
     });
   };
 
@@ -149,7 +152,7 @@ const CertificateModal = ({
             label="Certificate Image / Proof"
             previewUrl={imagePreview}
             onFileSelect={handleFileChange}
-            onClear={() => { setSelectedFile(null); setImagePreview(null); }}
+            onClear={() => { setSelectedFile(null); setImagePreview(null); setFormData((prev) => ({ ...prev, image_url: null })); }}
             uploading={uploading}
           />
 

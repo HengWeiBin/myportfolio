@@ -79,8 +79,8 @@ const Dashboard = ({ refreshPortfolio: propRefreshPortfolio }) => {
     setLoading(true);
     try {
       const fetchers = { projects: api.getProjects, certificates: api.getCertificates, experience: api.getExperience, skills: api.getSkills };
-      if (fetchers[activeTab]) setData(await fetchers[activeTab]());
-      else if (activeTab === 'profile') setProfile((await api.getProfile()) || {});
+      if (fetchers[activeTab]) setData(await fetchers[activeTab]({ fresh: true }));
+      else if (activeTab === 'profile') setProfile((await api.getProfile({ fresh: true })) || {});
     } catch (e) { toast.error('Failed to fetch data: ' + e.message); }
     finally { setLoading(false); }
   }, [activeTab]);
@@ -121,6 +121,8 @@ const Dashboard = ({ refreshPortfolio: propRefreshPortfolio }) => {
         toast.info('Uploading image to R2...');
         dataToSave.image_url = await uploadImageToR2(dataToSave.file, activeTab);
         setUploading(false);
+      } else if (dataToSave.image_url === undefined) {
+        dataToSave.image_url = modalData?.image_url !== undefined ? modalData.image_url : null;
       }
       const mutations = {
         projects: { update: api.updateProject, add: (d) => api.addProject({ ...d, tags: d.tags || [] }) },

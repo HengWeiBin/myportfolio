@@ -17,7 +17,10 @@ const ProjectModal = ({ isOpen, isEdit, initialData = {}, onClose, onSave, uploa
   const [formData, setFormData] = useState({
     title: '', description: '', link: '', date_start: '', date_end: '',
     tier: 'standard', sort_order: 0, repo_visibility: 'public',
-    is_confidential: false, metrics: '{}', ...initialData,
+    is_confidential: false, metrics: '{}',
+    image_url: initialData.image_url !== undefined ? initialData.image_url : null,
+    visual_type: initialData.visual_type || 'image',
+    ...initialData,
     tags: formatTags(initialData.tags),
   });
 
@@ -41,6 +44,8 @@ const ProjectModal = ({ isOpen, isEdit, initialData = {}, onClose, onSave, uploa
       repo_visibility: initialData.repo_visibility || 'public',
       is_confidential: Boolean(initialData.is_confidential),
       metrics: metricsStr,
+      image_url: initialData.image_url !== undefined ? initialData.image_url : null,
+      visual_type: initialData.visual_type || 'image',
     });
     setImagePreview(initialData.image_url || null);
     setSelectedFile(null);
@@ -76,6 +81,8 @@ const ProjectModal = ({ isOpen, isEdit, initialData = {}, onClose, onSave, uploa
       is_confidential: Boolean(formData.is_confidential),
       metrics: parsedMetrics,
       file: selectedFile,
+      image_url: formData.image_url !== undefined ? formData.image_url : (initialData.image_url !== undefined ? initialData.image_url : null),
+      visual_type: formData.visual_type || initialData.visual_type || 'image',
     });
   };
 
@@ -220,7 +227,7 @@ const ProjectModal = ({ isOpen, isEdit, initialData = {}, onClose, onSave, uploa
               label="Project Image (Visual)"
               previewUrl={imagePreview}
               onFileSelect={handleFileChange}
-              onClear={() => { setSelectedFile(null); setImagePreview(null); }}
+              onClear={() => { setSelectedFile(null); setImagePreview(null); setFormData((prev) => ({ ...prev, image_url: null })); }}
               uploading={uploading}
             />
           </div>
