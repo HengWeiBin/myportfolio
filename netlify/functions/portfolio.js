@@ -221,11 +221,18 @@ exports.handler = async (event) => {
       }
     };
 
+    const isFreshQuery = Boolean(
+      event.queryStringParameters?.fresh ||
+      event.queryStringParameters?._t
+    );
+    const shouldBypassCache = isAdmin || isFreshQuery;
+
     return {
       statusCode: 200,
       headers: {
         ...headers,
-        'Cache-Control': isAdmin ? 'private, no-cache, no-store' : 'public, max-age=60, s-maxage=300'
+        'Vary': 'Cookie, Authorization, x-admin-key',
+        'Cache-Control': shouldBypassCache ? 'no-cache, no-store, must-revalidate' : 'public, max-age=60, s-maxage=300'
       },
       body: JSON.stringify(payload)
     };

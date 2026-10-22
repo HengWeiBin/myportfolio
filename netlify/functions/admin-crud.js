@@ -154,6 +154,7 @@ exports.handler = async (event) => {
         const { title, description, link, date_start, date_end, image_url, tags, tier, sort_order, visual_type, is_confidential, repo_visibility, metrics } = data;
         const serializedMetrics = typeof metrics === 'object' && metrics !== null ? JSON.stringify(metrics) : (metrics || '{}');
         const normalizedTags = Array.isArray(tags) ? tags : (typeof tags === 'string' ? tags.split(',').map((s) => s.trim()).filter(Boolean) : []);
+        const hasImageUrl = image_url !== undefined;
         result = await sql`
           UPDATE projects 
           SET title = ${title}, 
@@ -161,7 +162,7 @@ exports.handler = async (event) => {
               link = ${link || ''}, 
               date_start = ${date_start || ''}, 
               date_end = ${date_end || ''}, 
-              image_url = ${image_url || null}, 
+              image_url = CASE WHEN ${!hasImageUrl} THEN image_url ELSE ${image_url || null} END, 
               tags = ${normalizedTags}, 
               tier = ${tier || 'standard'}, 
               sort_order = ${sort_order !== undefined ? Number(sort_order) : 0}, 
@@ -203,12 +204,13 @@ exports.handler = async (event) => {
       case 'updateCertificate': {
         if (!id) throw new Error('Certificate id is required for update');
         const { title, issuer, date, image_url, credential_id, category, tier, sort_order } = data;
+        const hasImageUrl = image_url !== undefined;
         result = await sql`
           UPDATE certificates 
           SET title = ${title}, 
               issuer = ${issuer || ''}, 
               date = ${date || ''}, 
-              image_url = ${image_url || null}, 
+              image_url = CASE WHEN ${!hasImageUrl} THEN image_url ELSE ${image_url || null} END, 
               credential_id = ${credential_id || ''}, 
               category = ${category || 'Certificate'}, 
               tier = ${tier || 'standard'}, 
