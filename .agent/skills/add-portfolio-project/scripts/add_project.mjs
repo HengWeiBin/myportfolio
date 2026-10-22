@@ -388,6 +388,22 @@ async function main() {
     }
   }
 
+  const targetId = options.id || projectData.id || null;
+
+  // If targetId is provided and we have DATABASE_URL, fetch existing record to populate defaults
+  if (targetId && DATABASE_URL) {
+    try {
+      const sql = neon(DATABASE_URL);
+      const existing = await sql`SELECT * FROM projects WHERE id = ${Number(targetId)}`;
+      if (existing.length > 0) {
+        console.log(`[Database] Found existing project id ${targetId}: "${existing[0].title}"`);
+        projectData = { ...existing[0], ...projectData };
+      }
+    } catch (fetchErr) {
+      console.warn(`[Warning] Could not query database for existing project ${targetId}: ${fetchErr.message}`);
+    }
+  }
+
   // Merge CLI overrides on top of JSON file data
   const title = options.title || projectData.title;
   const description = options.description ?? projectData.description ?? '';
@@ -403,7 +419,6 @@ async function main() {
   const repoVisibility = options.repoVisibility || projectData.repo_visibility || 'public';
   const dateStart = options.dateStart ?? projectData.date_start ?? '';
   const dateEnd = options.dateEnd ?? projectData.date_end ?? '';
-  const targetId = options.id || projectData.id || null;
 
   // Merge tags
   let tags = [];
