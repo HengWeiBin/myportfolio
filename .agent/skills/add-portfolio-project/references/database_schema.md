@@ -40,9 +40,9 @@ CREATE TABLE IF NOT EXISTS projects (
 | `date_end` | `TEXT` | Yes | `''` | Project end date formatted as `YYYY-MM` (e.g., `'2024-10'`) or `'PRESENT'` for ongoing work. |
 | `tags` | `TEXT[]` | Yes | `'{}'::text[]` | Array of domain tags, frameworks, or competencies (e.g., `ARRAY['PyTorch', 'Computer Vision', 'CUDA', 'TensorRT']`). |
 | `image_url` | `TEXT` | Yes | `NULL` | Public Cloudflare R2 CDN URL (e.g., `https://pub-<id>.r2.dev/projects/...`). Optimal aspect ratio is **5:4 / 4:3** (~1.25 : 1, e.g., `800x640` or `1000x800`) to ensure optimal rendering under the card's `md:w-5/12 min-h-[380px]` `object-cover` layout without distortion or cropping. **Never use raw.githubusercontent.com** due to CORS and browser anti-hotlinking referrer headers. |
-| `tier` | `TEXT` | No | `'standard'` | Card tier classification: `'featured'` (highlighted flagship projects showcased on top) or `'standard'` (general portfolio grid). |
+| `tier` | `TEXT` | No | `'standard'` | Card tier classification: `'featured'` (flagship showcase), `'standard'` (main grid), or `'archive'` (archived/foundation catalog). |
 | `sort_order` | `INTEGER` | No | `0` | Ascending sort weight (0 is top rank / flagship). When inserting with `sort_order: 0`, existing projects with `sort_order >= 0` should be incremented. |
-| `visual_type` | `TEXT` | No | `'image'` | Frontend visualization renderer component: `'image'`, `'ResultViz'`, `'NeuralArch'`, or `'CodeBlock'`. |
+| `visual_type` | `TEXT` | No | `'image'` | Legacy column retained for DB compatibility (defaults to `'image'`). |
 | `is_confidential`| `BOOLEAN` | No | `FALSE` | Indicates proprietary or NDA-protected enterprise project. If `TRUE`, sensitive repository links and client internals are masked in the UI. |
 | `repo_visibility`| `TEXT` | No | `'public'` | Repository accessibility status: `'public'` (open-source) or `'private'` (internal enterprise / restricted). |
 | `metrics` | `JSONB` | No | `'{}'::jsonb` | Key-value pairs for ML benchmarks, inference throughput, or evaluation statistics (e.g., `{"mAP50": "84.2%", "FPS": "120", "Latency": "8.3ms"}`). |
@@ -53,8 +53,9 @@ CREATE TABLE IF NOT EXISTS projects (
 ## 3. Detailed Field Conventions
 
 ### `tier`
-- `'featured'`: Renders in prominent featured project showcase cards with rich preview visualizers, full metrics chips, and expanded technical descriptions.
-- `'standard'`: Displayed in the secondary project catalog grid with compact badges and summary metadata.
+- `'featured'`: Flagship showcase cards displayed prominently at the top of the projects section with rich previews, full metrics chips, and expanded technical summaries.
+- `'standard'`: Main project grid with compact badges and summary metadata.
+- `'archive'`: Archived or foundation catalog items (filtered in the archive explorer). Legacy values `'archived'` and `'foundation'` are normalized to `'archive'`.
 
 ### `sort_order`
 - `0`: Top flagship project. Displayed first in the portfolio UI.
@@ -65,11 +66,7 @@ CREATE TABLE IF NOT EXISTS projects (
 - Subsequent projects are ordered in ascending order (`ORDER BY sort_order ASC, id DESC`).
 
 ### `visual_type`
-The UI maps `visual_type` to specialized visualization components:
-- `'image'`: Standard project thumbnail or architecture graphic served from Cloudflare R2 CDN.
-- `'ResultViz'`: Interactive charts or evaluation visualizer (e.g., precision-recall curves, loss curves).
-- `'NeuralArch'`: Neural network topology or pipeline workflow diagram.
-- `'CodeBlock'`: Terminal code snippet or model inference signature preview.
+Legacy column retained for database schema compatibility. Modern frontend card components render media directly. Always defaults to `'image'`.
 
 ### `image_url`
 - **Optimal Aspect Ratio**: **5:4** or **4:3** (~1.25 : 1), such as `800x640` or `1000x800`.
@@ -150,7 +147,7 @@ const result = await sql`
   "image_url": "https://pub-xxxxxx.r2.dev/projects/transformer-trt-infer_1718000000000.png",
   "tier": "featured",
   "sort_order": 0,
-  "visual_type": "NeuralArch",
+  "visual_type": "image",
   "is_confidential": false,
   "repo_visibility": "public",
   "metrics": {

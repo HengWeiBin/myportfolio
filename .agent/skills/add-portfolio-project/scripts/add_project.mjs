@@ -75,11 +75,10 @@ Arguments & Options:
   --description <string>        Detailed summary / markdown description
   --link <url>                  Project repository or live demo URL
   --image-url, --image <string> Image source (local path, web URL, or GitHub raw link)
-  --tier <featured|standard>    Project tier (default: standard)
+  --tier <featured|standard|archive> Project tier (default: standard)
   --sort-order <number>         Sort weight (0 for flagship, shifts existing items)
   --tags <list>                 Comma-separated tags or multiple flags (e.g. PyTorch,CUDA)
   --metrics <json|string>       JSON string or key=val,key2=val2 benchmark metrics
-  --visual-type <type>          image | ResultViz | NeuralArch | CodeBlock (default: image)
   --date-start <YYYY-MM>        Project start date
   --date-end <YYYY-MM|PRESENT>  Project end date
   --is-confidential <bool>      Proprietary/NDA project flag (true|false, default: false)
@@ -409,7 +408,10 @@ async function main() {
   const description = options.description ?? projectData.description ?? '';
   const link = options.link ?? projectData.link ?? '';
   const rawImage = options.imageUrl || options.image || projectData.image_url || projectData.image;
-  const tier = (options.tier || projectData.tier || 'standard').toLowerCase();
+  let tier = (options.tier || projectData.tier || 'standard').toLowerCase();
+  if (tier === 'archived' || tier === 'foundation') {
+    tier = 'archive';
+  }
   const sortOrder = options.sortOrder !== undefined ? Number(options.sortOrder) : 
                     (projectData.sort_order !== undefined ? Number(projectData.sort_order) : 0);
   const visualType = options.visualType || projectData.visual_type || 'image';
@@ -441,13 +443,8 @@ async function main() {
     process.exit(1);
   }
 
-  if (!['featured', 'standard'].includes(tier)) {
-    console.error(`[Validation Error] Invalid tier: "${tier}". Allowed values: 'featured', 'standard'.`);
-    process.exit(1);
-  }
-
-  if (!['image', 'ResultViz', 'NeuralArch', 'CodeBlock'].includes(visualType)) {
-    console.error(`[Validation Error] Invalid visual_type: "${visualType}". Allowed values: 'image', 'ResultViz', 'NeuralArch', 'CodeBlock'.`);
+  if (!['featured', 'standard', 'archive'].includes(tier)) {
+    console.error(`[Validation Error] Invalid tier: "${tier}". Allowed values: 'featured', 'standard', 'archive'.`);
     process.exit(1);
   }
 
@@ -456,7 +453,6 @@ async function main() {
   console.log(`Title:          ${title}`);
   console.log(`Tier:           ${tier}`);
   console.log(`Sort Order:     ${sortOrder}`);
-  console.log(`Visual Type:    ${visualType}`);
   console.log(`Tags:           [${tags.join(', ')}]`);
   console.log(`Metrics:        ${JSON.stringify(metrics)}`);
   console.log(`Confidential:   ${isConfidential}`);
