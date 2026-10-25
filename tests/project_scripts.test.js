@@ -81,6 +81,17 @@ describe('edit_project CLI argument parsing', () => {
     expect(delOpts.delete).toBe('5');
     expect(delOpts.cleanupOldImage).toBe(true);
   });
+
+  it('rejects --id, --get, or --delete without valid numeric ID preventing boolean coercion to 1', () => {
+    expect(() => parseEditArgs(['--delete'])).toThrow('Missing valid numeric ID for --delete / --get / --id');
+    expect(() => parseEditArgs(['--delete', '--cleanup-old-image'])).toThrow('Missing valid numeric ID for --delete / --get / --id');
+    expect(() => parseEditArgs(['--get'])).toThrow('Missing valid numeric ID for --delete / --get / --id');
+    expect(() => parseEditArgs(['--get', '--json'])).toThrow('Missing valid numeric ID for --delete / --get / --id');
+    expect(() => parseEditArgs(['--id'])).toThrow('Missing valid numeric ID for --delete / --get / --id');
+    expect(() => parseEditArgs(['--id', '--dry-run'])).toThrow('Missing valid numeric ID for --delete / --get / --id');
+    expect(() => parseEditArgs(['--delete=abc'])).toThrow('Missing valid numeric ID for --delete / --get / --id');
+    expect(() => parseEditArgs(['--id=0'])).toThrow('Missing valid numeric ID for --delete / --get / --id');
+  });
 });
 
 describe('Tag manipulation logic (updateTags)', () => {
@@ -138,9 +149,21 @@ describe('Contiguous re-indexing algorithm (computeContiguousReorder)', () => {
     expect(changedIds).toEqual([20, 30, 40, 10]);
   });
 
-  it('clamps new sort_order to bounds gracefully', () => {
-    const { reordered } = computeContiguousReorder(initialProjects, 20, 999);
+  it('clamps out-of-bounds upper sort_order (e.g. 999) to [0, totalLength - 1] and maintains contiguous numbering', () => {
+    const { reordered, clampedSortOrder } = computeContiguousReorder(initialProjects, 20, 999);
+    expect(clampedSortOrder).toBe(3);
+    const target = reordered.find(p => p.id === 20);
+    expect(target.sort_order).toBe(3);
     expect(reordered.map(p => p.id)).toEqual([10, 30, 40, 20]);
+    expect(reordered.map(p => p.sort_order)).toEqual([0, 1, 2, 3]);
+  });
+
+  it('clamps out-of-bounds negative sort_order to 0 and maintains contiguous numbering', () => {
+    const { reordered, clampedSortOrder } = computeContiguousReorder(initialProjects, 30, -50);
+    expect(clampedSortOrder).toBe(0);
+    const target = reordered.find(p => p.id === 30);
+    expect(target.sort_order).toBe(0);
+    expect(reordered.map(p => p.id)).toEqual([30, 10, 20, 40]);
     expect(reordered.map(p => p.sort_order)).toEqual([0, 1, 2, 3]);
   });
 

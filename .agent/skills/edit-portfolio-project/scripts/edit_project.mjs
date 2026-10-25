@@ -156,7 +156,12 @@ function parseCliArgs(args) {
 
       const camelKey = key.replace(/-([a-z])/g, (_, ch) => ch.toUpperCase());
 
-      if (camelKey === 'tags') {
+      if (['id', 'get', 'delete'].includes(camelKey)) {
+        if (val === true || typeof val === 'boolean' || !/^\d+$/.test(String(val)) || Number(val) <= 0) {
+          throw new Error('Missing valid numeric ID for --delete / --get / --id');
+        }
+        options[camelKey] = String(val);
+      } else if (camelKey === 'tags') {
         if (!options.tags) options.tags = [];
         if (typeof val === 'string') {
           options.tags.push(...val.split(',').map(t => t.trim()).filter(Boolean));
@@ -282,7 +287,8 @@ function computeContiguousReorder(projects, targetId, newSortOrder) {
 
   return {
     reordered,
-    changedRows
+    changedRows,
+    clampedSortOrder
   };
 }
 
@@ -471,7 +477,13 @@ async function deleteR2Object(key, dryRun = false) {
 
 async function main() {
   const cliArgs = process.argv.slice(2);
-  const options = parseCliArgs(cliArgs);
+  let options;
+  try {
+    options = parseCliArgs(cliArgs);
+  } catch (err) {
+    console.error(`[Validation Error] ${err.message}`);
+    process.exit(1);
+  }
 
   if (options.help || cliArgs.length === 0) {
     printHelp();
@@ -530,11 +542,11 @@ async function main() {
 
   // Mode 2: Get single project details (--get <id>)
   if (options.get !== undefined) {
-    const targetId = Number(options.get);
-    if (!targetId) {
-      console.error('[Validation Error] Please specify a valid numeric ID for --get.');
+    if (typeof options.get === 'boolean' || !/^\d+$/.test(String(options.get)) || Number(options.get) <= 0) {
+      console.error('[Validation Error] Missing valid numeric ID for --delete / --get / --id');
       process.exit(1);
     }
+    const targetId = Number(options.get);
 
     try {
       const rows = await sql`SELECT * FROM projects WHERE id = ${targetId}`;
@@ -570,11 +582,11 @@ async function main() {
 
   // Mode 3: Delete project (--delete <id>)
   if (options.delete !== undefined) {
-    const deleteId = Number(options.delete);
-    if (!deleteId) {
-      console.error('[Validation Error] Please specify a valid numeric ID for --delete.');
+    if (typeof options.delete === 'boolean' || !/^\d+$/.test(String(options.delete)) || Number(options.delete) <= 0) {
+      console.error('[Validation Error] Missing valid numeric ID for --delete / --get / --id');
       process.exit(1);
     }
+    const deleteId = Number(options.delete);
 
     try {
       const rows = await sql`SELECT * FROM projects WHERE id = ${deleteId}`;
@@ -629,11 +641,11 @@ async function main() {
 
   // Mode 4: Update project (--id <id>)
   if (options.id !== undefined) {
-    const targetId = Number(options.id);
-    if (!targetId) {
-      console.error('[Validation Error] Please specify a valid numeric ID for --id.');
+    if (typeof options.id === 'boolean' || !/^\d+$/.test(String(options.id)) || Number(options.id) <= 0) {
+      console.error('[Validation Error] Missing valid numeric ID for --delete / --get / --id');
       process.exit(1);
     }
+    const targetId = Number(options.id);
 
     try {
       const rows = await sql`SELECT * FROM projects WHERE id = ${targetId}`;
@@ -704,7 +716,7 @@ async function main() {
         const allProjects = await sql`SELECT id, sort_order, title FROM projects ORDER BY sort_order ASC, id DESC`;
         const reorderResult = computeContiguousReorder(allProjects, targetId, newSortOrder);
         reorderChanges = reorderResult.changedRows;
-        finalSortOrder = newSortOrder;
+        finalSortOrder = reorderResult.clampedSortOrder;
       }
 
       console.log('\n--- Update Summary ---');
