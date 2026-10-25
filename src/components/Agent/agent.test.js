@@ -94,14 +94,15 @@ describe('Fallback Traces & Bilingual Grounding', () => {
   });
 });
 
+function TestActionComponent({ onReady }) {
+  const actions = useClientActions();
+  React.useEffect(() => {
+    onReady(actions);
+  }, [actions, onReady]);
+  return <div>Action Component</div>;
+}
+
 describe('useClientActions Hook', () => {
-  function TestActionComponent({ onReady }) {
-    const actions = useClientActions();
-    React.useEffect(() => {
-      onReady(actions);
-    }, [actions, onReady]);
-    return <div>Action Component</div>;
-  }
 
   it('executes scroll_to and finds elements', () => {
     const mockScrollIntoView = vi.fn();
@@ -416,18 +417,19 @@ describe('HeroTerminal Component', () => {
   });
 });
 
+function TestDockHarness() {
+  const { setIsHeroVisible } = useAgent();
+  return (
+    <div>
+      <button type="button" data-testid="scroll-out-btn" onClick={() => setIsHeroVisible(false)}>
+        Scroll Out
+      </button>
+      <FloatingDock />
+    </div>
+  );
+}
+
 describe('FloatingDock Component & Cmd+K Shortcut', () => {
-  function TestDockHarness() {
-    const { setIsHeroVisible } = useAgent();
-    return (
-      <div>
-        <button data-testid="scroll-out-btn" onClick={() => setIsHeroVisible(false)}>
-          Scroll Out
-        </button>
-        <FloatingDock />
-      </div>
-    );
-  }
 
   it('renders floating capsule when hero is scrolled out of view', () => {
     render(

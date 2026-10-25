@@ -35,6 +35,7 @@
     "dev": "npm-run-all --parallel start start:functions",
     "build": "vite build",
     "migrate": "node scripts/migrate_db.js",
+    "lint": "biome lint ./src ./netlify ./scripts",
     "test": "vitest run",
     "test:watch": "vitest"
   },
@@ -51,6 +52,7 @@
     ]
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.6.3",
     "@playwright/test": "^1.64.0",
     "@tailwindcss/postcss": "^4.1.18",
     "@testing-library/dom": "^10.4.2",

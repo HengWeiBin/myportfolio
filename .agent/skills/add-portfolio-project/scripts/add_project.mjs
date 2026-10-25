@@ -70,13 +70,15 @@ Usage:
   node add_project.mjs [path-to-project.json] [options]
 
 Arguments & Options:
+  --list                        List all projects in database and exit
+  --json                        Format output as JSON (used with --list)
   --file, -f <path>             Path to JSON file containing project definition
   --title <string>              Project title (Required)
   --description <string>        Detailed summary / markdown description
   --link <url>                  Project repository or live demo URL
   --image-url, --image <string> Image source (local path, web URL, or GitHub raw link)
   --tier <featured|standard|archive> Project tier (default: standard)
-  --sort-order <number>         Sort weight (0 for flagship, shifts existing items)
+  --sort-order <number>         Sort weight (N >= 0 shifts existing items >= N)
   --tags <list>                 Comma-separated tags or multiple flags (e.g. PyTorch,CUDA)
   --metrics <json|string>       JSON string or key=val,key2=val2 benchmark metrics
   --date-start <YYYY-MM>        Project start date
@@ -106,6 +108,16 @@ function parseCliArgs(args) {
     if (arg === '--help' || arg === '-h') {
       options.help = true;
       return options;
+    }
+
+    if (arg === '--list') {
+      options.list = true;
+      continue;
+    }
+
+    if (arg === '--json') {
+      options.json = true;
+      continue;
     }
 
     if (arg === '--dry-run') {
@@ -360,6 +372,39 @@ async function main() {
   const cliArgs = process.argv.slice(2);
   const options = parseCliArgs(cliArgs);
 
+  if (options.list) {
+    if (!DATABASE_URL) {
+      console.error('[Database Error] Missing database connection string. Please define NETLIFY_DATABASE_URL or REACT_APP_DATABASE_URL in .env.');
+      process.exit(1);
+    }
+    const sql = neon(DATABASE_URL);
+    try {
+      const projects = await sql`
+        SELECT id, sort_order, tier, title, repo_visibility, is_confidential 
+        FROM projects 
+        ORDER BY sort_order ASC, id DESC
+      `;
+      if (options.json) {
+        console.log(JSON.stringify(projects, null, 2));
+      } else {
+        console.log(`\nFound ${projects.length} project(s):\n`);
+        const formatted = projects.map(p => ({
+          'ID': p.id,
+          'Sort Order': p.sort_order,
+          'Tier': p.tier,
+          'Title': p.title,
+          'Visibility': p.repo_visibility || 'public',
+          'Confidential': p.is_confidential ? 'Yes' : 'No'
+        }));
+        console.table(formatted);
+      }
+      process.exit(0);
+    } catch (listErr) {
+      console.error(`[Database Error] Failed to list projects: ${listErr.message}`);
+      process.exit(1);
+    }
+  }
+
   if (options.help || (cliArgs.length === 0 && !options.file)) {
     printHelp();
     process.exit(0);
@@ -481,13 +526,13 @@ async function main() {
   const serializedMetrics = JSON.stringify(metrics);
 
   try {
-    // If inserting new record with sort_order: 0, shift existing records to preserve top rank
-    if (!targetId && sortOrder === 0) {
-      console.log('[Database] Shifting existing project sort_order weights (sort_order = sort_order + 1 WHERE sort_order >= 0)...');
+    // If inserting new record with sort_order >= 0, shift existing records to preserve rank
+    if (!targetId && sortOrder >= 0) {
+      console.log(`[Database] Shifting existing project sort_order weights (sort_order = sort_order + 1 WHERE sort_order >= ${sortOrder})...`);
       const shiftResult = await sql`
         UPDATE projects 
         SET sort_order = sort_order + 1 
-        WHERE sort_order >= 0
+        WHERE sort_order >= ${sortOrder}
       `;
       console.log('[Database] Sort orders shifted successfully.');
     }
@@ -560,7 +605,23 @@ async function main() {
   }
 }
 
-main().catch((err) => {
-  console.error(`[Fatal Error] ${err.stack || err.message}`);
-  process.exit(1);
-});
+export {
+  parseCliArgs,
+  sanitizeFilename,
+  inferMimeAndExt,
+  parseMetrics,
+  uploadImageToR2,
+  main
+};
+
+const isDirectRun = process.argv[1] && (
+  process.argv[1] === fileURLToPath(import.meta.url) ||
+  process.argv[1].endsWith('add_project.mjs')
+);
+
+if (isDirectRun) {
+  main().catch((err) => {
+    console.error(`[Fatal Error] ${err.stack || err.message}`);
+    process.exit(1);
+  });
+}

@@ -81,10 +81,14 @@ export const Navbar = () => {
       .map(id => document.getElementById(id))
       .filter(Boolean);
 
-    sections.forEach(sec => observer.observe(sec));
+    sections.forEach(sec => {
+      observer.observe(sec);
+    });
 
     return () => {
-      sections.forEach(sec => observer.unobserve(sec));
+      sections.forEach(sec => {
+        observer.unobserve(sec);
+      });
     };
   }, [isHome]);
 

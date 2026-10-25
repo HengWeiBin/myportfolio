@@ -39,6 +39,12 @@ npm run build
 npm run deploy
 ```
 
+### Linting (Biome)
+```bash
+# Run Biome linter across src, netlify, and scripts
+npm run lint
+```
+
 ### Unit Tests (Vitest + React Testing Library)
 ```bash
 # Single test run (CI mode)
@@ -64,6 +70,20 @@ npx playwright test --ui
 npx playwright show-report
 ```
 *Note: Playwright's `webServer` automatically boots `npm start` on port 3000 if not already running.*
+
+---
+
+## Git Branching & Release Discipline
+
+- **Default Development Branch (`dev`)**:
+  - The default working branch for all daily development, WIP features, agent skills, documentation, migration scripts, and tests is `dev`.
+  - All new feature branches and agent PRs/commits must target `dev`.
+- **Production Release Branch (`master`)**:
+  - `master` is reserved strictly for production deployment releases affecting the live frontend (`src/`, `public/`, `index.html`) or serverless functions (`netlify/functions/`).
+  - Do NOT commit or push non-frontend changes directly to `master`.
+- **Local Verification & TDD Guardrail**:
+  - Before committing or pushing, all changes must pass `npm run lint` and `npm test` locally.
+  - **No GitHub Actions CI workflow** is configured or used in this repository. Local verification with `npm test` and `npm run lint` is mandatory and acts as the sole quality gate.
 
 ---
 

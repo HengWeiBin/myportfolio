@@ -34,10 +34,11 @@ Adds and updates Machine Learning and software projects in the portfolio website
 - **Proactively highlight key decision points and trade-offs with recommended options**:
   - **Image Framing/Cropping**: If the repo lacks a 5:4 or 4:3 figure, suggest which asset to use or how to crop/frame with safe margin.
   - **Metrics Selection**: Feature 3–4 high-impact quantifiable benchmarks (latency, throughput, accuracy, speedup).
-  - **Tier & Ordering**: Recommend whether `tier` should be `'featured'`, `'standard'`, or `'archive'`, and explain `sort_order` (`sort_order=0` shifts existing projects).
+  - **Tier & Ordering**: Recommend whether `tier` should be `'featured'`, `'standard'`, or `'archive'`, and explain `sort_order` (specifying `--sort-order=N` where $N \ge 0$ shifts existing projects $\ge N$ to insert contiguously at rank $N$).
 
 ### 3. 執行與驗證 (Execute & Verify)
 - Once the user confirms, run `node .agent/skills/add-portfolio-project/scripts/add_project.mjs` (via CLI flags or a temporary JSON file).
+- Inspect database state before or after insertion using `--list` (or `--list --json`).
 - Remove any temporary JSON file after execution and verify `git status` is clean.
 - Verify public image accessibility on R2 CDN and verify database record insertion.
 
@@ -45,22 +46,32 @@ Adds and updates Machine Learning and software projects in the portfolio website
 
 ## Execution Examples
 
-### Method A: CLI Direct Execution
+### Method A: Listing Projects
 ```bash
+# Display formatted table of all database projects
+node .agent/skills/add-portfolio-project/scripts/add_project.mjs --list
+
+# Output projects as JSON array
+node .agent/skills/add-portfolio-project/scripts/add_project.mjs --list --json
+```
+
+### Method B: CLI Direct Execution (with Arbitrary Sort-Order Shifting)
+```bash
+# Insert project at rank 1 (automatically shifts existing items at sort_order >= 1 by +1)
 node .agent/skills/add-portfolio-project/scripts/add_project.mjs \
   --title="Low-Latency Vision-Language Transformer" \
   --description="High-throughput inference pipeline integrating TensorRT-LLM and FlashAttention-2." \
   --link="https://github.com/hengweibin/vlm-inference" \
   --image-url="https://github.com/hengweibin/vlm-inference/raw/main/assets/arch.png" \
   --tier="featured" \
-  --sort-order=0 \
+  --sort-order=1 \
   --tags="TensorRT,PyTorch,CUDA,FlashAttention" \
   --metrics='{"Latency":"14.2ms","Throughput":"185 tok/s","Speedup":"2.8x"}' \
   --date-start="2024-03" \
   --date-end="PRESENT"
 ```
 
-### Method B: JSON File Execution & Dry-Run
+### Method C: JSON File Execution & Dry-Run
 ```bash
 # Execute using a JSON definition file
 node .agent/skills/add-portfolio-project/scripts/add_project.mjs project.json
