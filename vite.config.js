@@ -175,6 +175,15 @@ export default defineConfig(({ mode }) => {
           });
         },
       },
+      {
+        name: 'strip-shebang',
+        transform(code) {
+          if (code.startsWith('#!')) {
+            return code.replace(/^#![^\n]*\n/, '');
+          }
+          return null;
+        },
+      },
       react(),
       netlifyDevMiddlewarePlugin(),
       {
