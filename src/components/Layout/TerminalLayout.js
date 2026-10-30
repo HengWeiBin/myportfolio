@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { useProfile } from '../../context/ProfileContext';
 import { VisualSyncProvider } from '../../context/VisualSyncContext';
 import FallbackPoster from '../Background/FallbackPoster';
@@ -67,13 +67,6 @@ const Footer = () => {
 };
 
 export const TerminalLayout = ({ children }) => {
-  const { profile } = useProfile();
-
-  useEffect(() => {
-    if (profile?.name) {
-      document.title = `${profile.name} | Mission Control`;
-    }
-  }, [profile]);
 
   return (
     <VisualSyncProvider>

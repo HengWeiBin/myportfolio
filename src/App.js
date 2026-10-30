@@ -16,6 +16,12 @@ import Contact from './components/Sections/Contact';
 // Dedicated Archive Page
 import Archive from './pages/Archive';
 
+// 404 Not Found Page
+import NotFound from './pages/NotFound';
+
+// SEO Route Metadata Synchronizer
+import SeoHead from './components/Common/SeoHead';
+
 // Admin Panel Routes
 import AdminLayout from './pages/Admin/AdminLayout';
 import Login from './pages/Admin/Login';
@@ -43,6 +49,7 @@ function App() {
     <ProfileProvider>
       <AgentProvider>
         <BrowserRouter>
+          <SeoHead />
           <Routes>
             {/* Public 5-Section Narrative Homepage */}
             <Route
@@ -60,6 +67,9 @@ function App() {
             {/* Admin Routes */}
             <Route path="/admin/login" element={<Login />} />
             <Route path="/admin/*" element={<AdminLayout />} />
+
+            {/* 404 Catch-All Route */}
+            <Route path="*" element={<NotFound />} />
           </Routes>
           <FloatingDock />
         </BrowserRouter>
