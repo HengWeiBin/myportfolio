@@ -29,6 +29,7 @@ yarn-error.log*
 backup/
 scripts/*
 !scripts/migrate_db.js
+!scripts/prerender-seo.js
 
 # Local Netlify folder
 .netlify

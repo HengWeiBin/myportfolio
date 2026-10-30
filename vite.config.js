@@ -5,6 +5,7 @@ import { createRequire } from 'module';
 import net from 'net';
 
 const require = createRequire(import.meta.url);
+const { prerenderSeoPages } = require('./scripts/prerender-seo.js');
 
 function checkPortActive(port) {
   return new Promise((resolve) => {
@@ -176,6 +177,12 @@ export default defineConfig(({ mode }) => {
       },
       react(),
       netlifyDevMiddlewarePlugin(),
+      {
+        name: 'prerender-seo',
+        closeBundle() {
+          prerenderSeoPages();
+        },
+      },
     ],
     optimizeDeps: {
       esbuildOptions: {
