@@ -9,8 +9,8 @@ const Hero = () => {
   const { setIsHeroVisible } = useAgent();
   const heroRef = useRef(null);
 
-  const title = profile?.title || "Machine Learning Engineer \n& AI Researcher.";
-  const subtitle = profile?.bio || "Translating data into intelligence. Specializing in LLMs, Computer Vision, and scalable MLOps pipelines.";
+  const title = profile?.title || 'AI Systems & Knowledge Engineer';
+  const subtitle = profile?.bio || "Specializing in Agentic RAG architectures, LLM deployment, and ontology engineering to bridge complex domain knowledge with reliable AI solutions.";
 
   useEffect(() => {
     if (typeof window === 'undefined' || !window.IntersectionObserver) return;
@@ -101,7 +101,7 @@ const Hero = () => {
                 </a>
 
                 <a
-                  href={profile?.resume_link || "/104.pdf"}
+                  href={profile?.resume_link || "/resume.pdf"}
                   target="_blank"
                   rel="noreferrer"
                   className="inline-flex items-center gap-2 px-5 py-2.5 rounded font-mono text-sm font-medium bg-slate-800/60 text-slate-300 border border-cyber-border hover:text-white hover:border-slate-500 hover:bg-slate-800 transition-all focus:outline-none focus:ring-2 focus:ring-purple-400"

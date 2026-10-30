@@ -32,8 +32,8 @@ const Contact = () => {
 
         {/* Narrative Description */}
         <p className="max-w-2xl mx-auto text-base sm:text-lg font-sans text-slate-300 leading-relaxed mb-10">
-          I am actively available for high-impact Machine Learning Engineering and AI Research roles.
-          Whether you want to discuss novel neural architectures, evaluate production MLOps scalability,
+          I am actively available for high-impact AI Systems, Knowledge Engineering, and Agentic AI roles.
+          Whether you want to discuss novel neural architectures, evaluate production LLM scalability,
           or explore collaboration, my communications channels are open.
         </p>
 

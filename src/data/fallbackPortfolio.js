@@ -6,12 +6,12 @@
 export const FALLBACK_PROFILE = {
   id: 1,
   name: 'Heng Wei Bin (Wayne)',
-  title: 'Machine Learning Engineer & AI Researcher',
+  title: 'AI Systems & Knowledge Engineer',
   email: 'hengweibin1898@gmail.com',
   phone: '+886-900-000-000',
-  bio: 'Translating data into intelligence. Specializing in computer vision, 3D sensor fusion architectures, and high-throughput MLOps pipelines.',
+  bio: 'Specializing in Agentic RAG architectures, LLM deployment, and ontology engineering to bridge complex domain knowledge with reliable AI solutions.',
   github: 'https://github.com/hengweibin',
-  linkedin: 'https://linkedin.com/in/hengweibin',
+  linkedin: 'https://www.linkedin.com/in/wayne-hengweibin-ai',
   instagram: '',
   facebook: '',
   resume_link: '/resume.pdf'

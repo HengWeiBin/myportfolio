@@ -232,7 +232,7 @@ export const FALLBACK_TRACES = [
         params: {},
         result: {
           name: 'Wayne Heng',
-          title: 'Machine Learning Engineer & Perception Researcher',
+          title: 'AI Systems & Knowledge Engineer',
           email: 'hengweibin1898@gmail.com'
         }
       }
@@ -240,7 +240,7 @@ export const FALLBACK_TRACES = [
     uiActions: [
       { type: 'scroll_to', target: 'contact' }
     ],
-    response: "Wayne Heng is a Machine Learning Engineer specializing in computer vision, autonomous perception, and sensor fusion architectures. You can establish a direct handshake via email or LinkedIn below."
+    response: "Wayne Heng is an AI Systems & Knowledge Engineer specializing in Agentic RAG architectures, LLM deployment, and ontology engineering. You can establish a direct handshake via email or LinkedIn below."
   },
 
   // 10. Profile / Contact - Traditional Chinese
@@ -255,7 +255,7 @@ export const FALLBACK_TRACES = [
         params: {},
         result: {
           name: 'Wayne Heng',
-          title: 'Machine Learning Engineer & Perception Researcher',
+          title: 'AI Systems & Knowledge Engineer',
           email: 'hengweibin1898@gmail.com'
         }
       }
@@ -263,7 +263,7 @@ export const FALLBACK_TRACES = [
     uiActions: [
       { type: 'scroll_to', target: 'contact' }
     ],
-    response: "Wayne Heng 是一位專注於電腦視覺、多感測器融合與邊緣 AI 部署的機器學習工程師。已為您捲動至聯絡握手區，可透過電子郵件或 LinkedIn 與他取得聯繫。"
+    response: "Wayne Heng 是一位專注於 Agentic RAG 架構、LLM 部署與本體知識工程的 AI 系統與知識工程師（AI Systems & Knowledge Engineer）。已為您捲動至聯絡握手區，可透過電子郵件或 LinkedIn 與他取得聯繫。"
   },
 
   // 11. Default Fallback - English
@@ -278,7 +278,7 @@ export const FALLBACK_TRACES = [
         params: {},
         result: {
           name: 'Wayne Heng',
-          title: 'Machine Learning Engineer'
+          title: 'AI Systems & Knowledge Engineer'
         }
       },
       {
@@ -291,7 +291,7 @@ export const FALLBACK_TRACES = [
       { type: 'scroll_to', target: 'projects' },
       { type: 'highlight_project', target: 'CenterFusionDetect3D' }
     ],
-    response: "I can help you explore Wayne's projects, core capabilities, research timeline, and verified credentials. You can ask about 3D sensor fusion architectures, technical stack proficiencies, or previous ML roles."
+    response: "I can help you explore Wayne's projects, core capabilities, research timeline, and verified credentials. You can ask about Agentic RAG architectures, LLM deployment, ontology engineering, or previous engineering roles."
   },
 
   // 12. Default Fallback - Traditional Chinese
@@ -306,7 +306,7 @@ export const FALLBACK_TRACES = [
         params: {},
         result: {
           name: 'Wayne Heng',
-          title: 'Machine Learning Engineer'
+          title: 'AI Systems & Knowledge Engineer'
         }
       },
       {
@@ -319,7 +319,7 @@ export const FALLBACK_TRACES = [
       { type: 'scroll_to', target: 'projects' },
       { type: 'highlight_project', target: 'CenterFusionDetect3D' }
     ],
-    response: "我可以協助您探索工程師的研究專案、核心技術棧、工作歷程與專業認證。您可以詢問 3D 感測器融合架構、深度學習模型部署或職涯經歷。"
+    response: "我可以協助您探索工程師的研究專案、核心技術棧、工作歷程與專業認證。您可以詢問 Agentic RAG 架構、LLM 部署、本體知識工程或職涯經歷。"
   }
 ];
 
