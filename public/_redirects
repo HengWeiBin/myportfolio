@@ -1,3 +1,4 @@
+/104.pdf                 /resume.pdf                             301
 /api/auth/login          /.netlify/functions/auth-login          200
 /api/auth/logout         /.netlify/functions/auth-logout         200
 /api/auth/session        /.netlify/functions/auth-session        200
@@ -9,4 +10,4 @@
 /api/admin/conversations /.netlify/functions/admin-agent?action=conversations 200
 /api/admin/llm/*         /.netlify/functions/admin-agent         200
 /api/*                   /.netlify/functions/:splat              200
-/*                       /index.html                             200
+/admin/*                 /index.html                             200
