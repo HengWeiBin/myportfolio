@@ -1,7 +1,7 @@
 {
   "name": "myportfolio",
   "homepage": ".",
-  "version": "0.1.0",
+  "version": "2.5.1",
   "private": true,
   "dependencies": {
     "@aws-sdk/client-s3": "^3.975.0",
@@ -33,7 +33,7 @@
     "start": "vite",
     "start:functions": "netlify functions:serve --port 9999",
     "dev": "npm-run-all --parallel start start:functions",
-    "build": "vite build",
+    "build": "vite build && node scripts/prerender-seo.js",
     "migrate": "node scripts/migrate_db.js",
     "lint": "biome lint ./src ./netlify ./scripts",
     "test": "vitest run",
